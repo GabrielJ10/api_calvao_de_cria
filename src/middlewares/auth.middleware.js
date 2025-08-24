@@ -17,15 +17,25 @@ const authMiddleware = asyncHandler(async (req, res, next) => {
     );
   }
 
-  const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+  try {
+    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 
-  const currentUser = await userRepository.findById(decoded.userId);
-  if (!currentUser) {
-    return next(new AppError('O usuário pertencente a este token não existe mais.', 401));
+    // const currentUser = await userRepository.findById(decoded.userId);
+    // if (!currentUser) {
+    //   return next(new AppError('O usuário pertencente a este token não existe mais.', 401));
+    // }
+    // req.user = currentUser;
+
+req.user = { id: decoded.userId, role: decoded.role };
+
+    next();
+  } catch (err) {
+    if (err.name === 'TokenExpiredError') {
+      return next(new AppError('Sua sessão expirou. Por favor, faça login novamente.', 401));
+    }
+    // Para outros erros de JWT (assinatura inválida, etc.)
+    return next(new AppError('Token inválido ou corrompido.', 401));
   }
-
-  req.user = currentUser;
-  next();
 });
 
 module.exports = authMiddleware;

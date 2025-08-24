@@ -104,7 +104,7 @@ const refreshAccessToken = async (token) => {
   return { accessToken, refreshToken: token };
 };
 
-const forgotPassword = async (email, req) => {
+const forgotPassword = async (email, protocol, host) => {
   const user = await userRepository.findUserByEmail(email);
   if (!user) {
     return;
@@ -121,7 +121,7 @@ const forgotPassword = async (email, req) => {
   });
 
   try {
-    const resetURL = `${req.protocol}://${req.get('host')}/api/v1/auth/reset-password/${resetToken}`;
+    const resetURL = `${protocol}://${host}/api/v1/auth/reset-password/${resetToken}`;
     await new Email(user, resetURL).sendPasswordReset();
   } catch (err) {
     await userRepository.updateById(user._id, {

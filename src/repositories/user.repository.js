@@ -1,7 +1,7 @@
 const User = require('../models/user.model');
 
 const findByEmailWithPassword = async (email) => {
-  return User.findOne({ email: email.toLowerCase() }).select('+passwordHash');
+  return User.findOne({ email: email.toLowerCase() }).select('+passwordHash').select('+role');
 };
 
 const findUserByEmail = async (email) => {
@@ -22,6 +22,10 @@ const findById = async (id) => {
 const createUser = async (userData) => {
   const user = await User.create(userData);
   return user;
+};
+
+const findByIdWithPassword = async (id) => {
+  return User.findById(id).select('+passwordHash');
 };
 
 const findByIdWithRefreshToken = async (id) => {
@@ -51,6 +55,7 @@ module.exports = {
   findByEmailWithPassword,
   findById,
   createUser,
+  findByIdWithPassword,
   findByIdWithRefreshToken,
   findByPasswordResetToken,
   updateById,

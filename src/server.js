@@ -1,9 +1,10 @@
 require('dotenv').config();
 const express = require('express');
 const connectDB = require('./config/db');
-const authRoutes = require('./routes/auth.routes');
 const AppError = require('./utils/AppError');
 const errorHandler = require('./middlewares/errorHandler');
+const authRoutes = require('./routes/auth.routes');
+const userRoutes = require('./routes/user.routes');
 
 const app = express();
 connectDB();
@@ -13,6 +14,7 @@ app.use(express.json());
 
 // Roteador principal
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/users', userRoutes);
 
 // Rota de teste
 app.get('/', (req, res) => {

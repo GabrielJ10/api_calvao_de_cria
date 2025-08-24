@@ -27,7 +27,11 @@ const refreshToken = asyncHandler(async (req, res, next) => {
 });
 
 const forgotPassword = asyncHandler(async (req, res, next) => {
-  const result = await authService.forgotPassword(req.body.email, req);
+  const email = req.body.email;
+  const protocol = req.protocol;
+  const host = req.get('host')
+
+  const result = await authService.forgotPassword(email, protocol, host);
 
   res.status(200).json({
     status: 'success',
