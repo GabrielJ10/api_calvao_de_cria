@@ -59,29 +59,7 @@ const addressSchema = new mongoose.Schema(
     },
   },
   {
-    timestamps: true,
-    toJSON: {
-      transform: function (doc, ret) {
-        const orderedResponse = {
-          addressId: ret._id,
-          userId: ret.userId,
-          alias: ret.alias,
-          recipientName: ret.recipientName,
-          cep: ret.cep,
-          street: ret.street,
-          number: ret.number,
-          complement: ret.complement,
-          neighborhood: ret.neighborhood,
-          city: ret.city,
-          state: ret.state,
-          phone: ret.phone,
-          createdAt: ret.createdAt,
-          updatedAt: ret.updatedAt,
-        };
-        return orderedResponse;
-      },
-    },
-  }
+    timestamps: true }
 );
 
 const Address = mongoose.model('Address', addressSchema);

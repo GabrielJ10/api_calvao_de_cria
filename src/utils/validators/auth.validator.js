@@ -86,8 +86,8 @@ const forgotPasswordRules = () => [
   fieldWhitelistRule(ALLOWLISTS.FORGOT_PASSWORD),
 ];
 
-const resetPasswordRules = () => [
-  param('token')
+const resetPasswordRules = () => [  
+  param('resetToken')
     .trim()
     .notEmpty()
     .withMessage(ERROR_MESSAGES.user.resetToken.required)
@@ -101,6 +101,19 @@ const resetPasswordRules = () => [
   passwordConfirmRule(),
 
   fieldWhitelistRule(ALLOWLISTS.RESET_PASSWORD),
+];
+
+const refreshTokenRules = () => [
+  body('refreshToken')
+    .notEmpty()
+    .withMessage(ERROR_MESSAGES.auth.refreshToken.required)
+    .bail()
+    .isJWT()
+    .withMessage(ERROR_MESSAGES.auth.refreshToken.invalid)
+    .matches(/^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$/)
+    .withMessage(ERROR_MESSAGES.auth.refreshToken.format),
+
+  fieldWhitelistRule(ALLOWLISTS.REFRESH_TOKEN),
 ];
 
 const validate = (req, res, next) => {
@@ -132,4 +145,5 @@ module.exports = {
   validate,
   forgotPasswordRules,
   resetPasswordRules,
+  refreshTokenRules,
 };

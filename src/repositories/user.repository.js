@@ -19,6 +19,10 @@ const findById = async (id) => {
   return User.findById(id);
 };
 
+const findByIdWithRole = async (id) => {
+  return User.findById(id).select('+role');
+};
+
 const createUser = async (userData) => {
   const user = await User.create(userData);
   return user;
@@ -42,7 +46,7 @@ const updateById = async (userId, updateData) => {
 
 const emailExists = async (email) => {
   const user = await User.findOne({ email });
-  return !!user; // Retorna true ou false
+  return !!user;
 };
 
 const cpfExists = async (cpf) => {
@@ -57,6 +61,7 @@ module.exports = {
   createUser,
   findByIdWithPassword,
   findByIdWithRefreshToken,
+  findByIdWithRole,
   findByPasswordResetToken,
   updateById,
   emailExists,

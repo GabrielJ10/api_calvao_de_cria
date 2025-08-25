@@ -8,6 +8,13 @@ const REGEX = {
 };
 
 const ERROR_MESSAGES = {
+  auth: {
+    refreshToken: {
+      required: 'Refresh token não fornecido.',
+      invalid: 'Refresh token inválido.',
+      format: 'O refresh token fornecido não está em um formato válido.',
+    },
+  },
   user: {
     name: {
       required: 'O nome é obrigatório.',
@@ -123,6 +130,7 @@ const ALLOWLISTS = {
     'state',
     'phone',
   ],
+  REFRESH_TOKEN: ['refreshToken'],
 };
 
 const nameRule = (name = 'name') =>

@@ -6,7 +6,7 @@ const createAddress = async (addressData) => {
 
 // Retorna apenas os campos necessários para a listagem
 const findAllAddressesByUserIdSummary = async (userId) => {
-  const summaryFields = 'alias recipientName street city state';
+  const summaryFields = 'alias street number city neighborhood';
   return Address.find({ userId }).select(summaryFields);
 };
 

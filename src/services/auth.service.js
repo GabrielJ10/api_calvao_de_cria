@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const userRepository = require('../repositories/user.repository');
+const userTransformer = require('../utils/transformers/user.transformer');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
@@ -39,10 +40,12 @@ const register = async (userData) => {
   };
 
   const newUser = await userRepository.createUser(dataToSave);
+  const newUserObj = newUser.toObject ? newUser.toObject() : newUser;
 
   return {
-    tokens: { accessToken, refreshToken },
-    user: { _id: newUser._id, name: newUser.name, email: newUser.email },
+    data: userTransformer.loginOrRegister(newUserObj, { accessToken, refreshToken }),
+    message: null,
+    details: null,
   };
 };
 
@@ -60,8 +63,9 @@ const login = async (email, password) => {
   await userRepository.updateById(user._id, { currentRefreshTokenHash: refreshTokenHash });
 
   return {
-    tokens: { accessToken, refreshToken },
-    user: { _id: user._id, name: user.name, email: user.email },
+    data: userTransformer.loginOrRegister(user, { accessToken, refreshToken }),
+    message: null,
+    details: null,
   };
 };
 
@@ -70,7 +74,11 @@ const logout = async (userId) => {
   if (user) {
     await userRepository.updateById(userId, { currentRefreshTokenHash: null });
   }
-  return { message: 'Logout realizado com sucesso.' };
+  return {
+    data: null,
+    message: 'Logout realizado com sucesso.',
+    details: null,
+  };
 };
 
 const refreshAccessToken = async (token) => {
@@ -94,14 +102,17 @@ const refreshAccessToken = async (token) => {
   // Verifica a assinatura e expiração do refresh token
   jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
 
-  // Gera APENAS um novo access token
   const accessToken = jwt.sign(
     { userId: user._id, role: user.role },
     process.env.ACCESS_TOKEN_SECRET,
     { expiresIn: '15m' }
   );
 
-  return { accessToken, refreshToken: token };
+  return {
+    data: { accessToken, refreshToken: token },
+    message: null,
+    details: null,
+  };
 };
 
 const forgotPassword = async (email, protocol, host) => {
@@ -134,9 +145,11 @@ const forgotPassword = async (email, protocol, host) => {
     );
   }
 
-  if (process.env.NODE_ENV === 'development') {
-    return { resetToken };
-  }
+  return {
+    data: process.env.NODE_ENV === 'development' ? { resetToken } : null,
+    message: 'Se uma conta com este e-mail existir, um link de recuperação foi enviado.',
+    details: null,
+  };
 };
 
 const resetPassword = async (token, newPassword) => {
@@ -162,6 +175,12 @@ const resetPassword = async (token, newPassword) => {
   };
 
   await userRepository.updateById(user._id, updatePayload);
+
+  return {
+    data: null,
+    message: 'Senha redefinida com sucesso!',
+    details: null,
+  };
 };
 
 module.exports = {

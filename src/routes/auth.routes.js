@@ -6,15 +6,16 @@ const {
   validate,
   forgotPasswordRules,
   resetPasswordRules,
+  refreshTokenRules,
 } = require('../utils/validators/auth.validator');
-const authMiddleware = require('../middlewares/auth.middleware');
+const { authMiddleware } = require('../middlewares/auth.middleware');
 const router = express.Router();
 
 router.post('/register', registerRules(), validate, authController.register);
 router.post('/login', loginRules(), validate, authController.login);
-router.post('/refresh', authController.refreshToken);
+router.post('/refresh', refreshTokenRules(), authController.refreshToken);
 router.post('/forgot-password', forgotPasswordRules(), validate, authController.forgotPassword);
-router.post('/reset-password/:token', resetPasswordRules(), validate, authController.resetPassword);
+router.post('/reset-password/:resetToken', resetPasswordRules(), validate, authController.resetPassword);
 
 router.post('/logout', authMiddleware, authController.logout);
 

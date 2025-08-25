@@ -26,7 +26,7 @@ const authMiddleware = asyncHandler(async (req, res, next) => {
     // }
     // req.user = currentUser;
 
-req.user = { id: decoded.userId, role: decoded.role };
+    req.user = { id: decoded.userId, role: decoded.role };
 
     next();
   } catch (err) {
@@ -38,4 +38,29 @@ req.user = { id: decoded.userId, role: decoded.role };
   }
 });
 
-module.exports = authMiddleware;
+const restrictTo = (...roles) => {
+  return asyncHandler(async (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+      return next(new AppError('Você não tem permissão para realizar esta ação.', 403));
+    }
+
+    const freshUser = await userRepository.findByIdWithRole(req.user.id);
+
+    if (!freshUser || !roles.includes(freshUser.role)) {
+      return next(
+        new AppError(
+          'Sessão inválida ou permissões alteradas. Por favor, faça login novamente.',
+          401
+        )
+      );
+    }
+
+    req.user = freshUser;
+    next();
+  });
+};
+
+module.exports = {
+  authMiddleware,
+  restrictTo,
+};

@@ -33,28 +33,6 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-
-    toJSON: {
-      transform: function (doc, ret) {
-        const formattedBirthDate = ret.birthDate
-          ? ret.birthDate.toISOString().split('T')[0]
-          : ret.birthDate;
-
-        const orderedResponse = {
-          userId: ret._id,
-          name: ret.name,
-          email: ret.email,
-          cpf: ret.cpf,
-          birthDate: formattedBirthDate,
-          phone: ret.phone,
-          createdAt: ret.createdAt,
-          updatedAt: ret.updatedAt,
-        };
-
-        // 2. Retorna o novo objeto ordenado
-        return orderedResponse;
-      },
-    },
   }
 );
 

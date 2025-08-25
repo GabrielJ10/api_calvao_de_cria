@@ -1,6 +1,6 @@
 const express = require('express');
 const userController = require('../controllers/user.controller');
-const authMiddleware = require('../middlewares/auth.middleware');
+const { authMiddleware } = require('../middlewares/auth.middleware');
 const { validate } = require('../utils/validators/auth.validator');
 const { updateProfileRules, changePasswordRules } = require('../utils/validators/user.validator');
 const {
