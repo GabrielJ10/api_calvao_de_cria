@@ -4,6 +4,8 @@ const cartTransformer = {
   
       const transformedCart = {
         id: cart._id,
+        
+
         items: cart.items.map((item) => ({
           productId: item.productId,
           name: item.name,
@@ -14,8 +16,7 @@ const cartTransformer = {
           unitPrice: item.unitPrice,
           totalItemPrice: item.totalItemPrice,
         })),
-        totalItems: cart.totalItems,
-        cartTotalPrice: cart.cartTotalPrice,
+        
       };
   
       if (cart.userId) {

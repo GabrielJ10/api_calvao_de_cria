@@ -87,6 +87,8 @@ const addItemToCart = async (identifier, { productId, quantity }) => {
   return {
     data: cartTransformer.transform(cart),
     newGuestCartId: newGuestCartId || (identifier.guestCartId && !cart ? identifier.guestCartId : null),
+  
+
   };
 };
 
@@ -134,7 +136,15 @@ const removeItemFromCart = async (identifier, productId) => {
     recalculateCartTotals(cart);
     await cart.save();
 
-    return { data: cartTransformer.transform(cart) };
+    return { data: cartTransformer.transform(cart.items),
+      message: 'Produtos adicionados com sucesso.',
+        details: {
+          cartTotalPrice: cart.cartTotalPrice,
+          cartId:cart.guestCartId|| cart._id,
+          userId: cart.userId || null,
+          totalItems: cart.totalItems,
+        }
+    };
 };
 
 const mergeCarts = async (userId, guestCartId) => {
