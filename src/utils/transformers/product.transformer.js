@@ -48,7 +48,7 @@ const productTransformer = {
     const discountPercentage = productTransformer.calculateDiscount(product);
 
     return {
-      productId: product._id,
+      id: product._id,
       name: product.name,
       description: product.description,
       price: product.price,
