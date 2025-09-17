@@ -1,5 +1,8 @@
 const mongoose = require('mongoose');
 
+// const GUEST_CART_LIFESPAN_SECONDS = 30 * 24 * 60 * 60; // 30 dias
+const GUEST_CART_LIFESPAN_SECONDS = 10
+
 const cartItemSchema = new mongoose.Schema(
   {
     productId: {
@@ -10,10 +13,10 @@ const cartItemSchema = new mongoose.Schema(
     name: { type: String, required: true },
     mainImageUrl: { type: String },
     quantity: { type: Number, required: true, min: 1 },
-    price: { type: Number, required: true }, // Preço original "cheio" do produto
-    promotionalPrice: { type: Number }, // Preço promocional, se aplicável
-    unitPrice: { type: Number, required: true }, // Preço efetivo usado (promocional ou original)
-    totalItemPrice: { type: Number, required: true }, // quantity * unitPrice
+    price: { type: Number, required: true },
+    promotionalPrice: { type: Number },
+    unitPrice: { type: Number, required: true },
+    totalItemPrice: { type: Number, required: true },
   },
   { _id: false }
 );
@@ -34,8 +37,6 @@ const cartSchema = new mongoose.Schema(
       sparse: true,
     },
     items: [cartItemSchema],
-
-    // --- SUMÁRIO COMPLETO E DETALHADO ---
     subtotal: { type: Number, default: 0 },
     itemsDiscount: { type: Number, default: 0 },
     couponDiscount: { type: Number, default: 0 },
@@ -47,18 +48,30 @@ const cartSchema = new mongoose.Schema(
       code: String,
       description: String,
     },
+    expireAt: {
+      type: Date,
+    },
   },
   {
     timestamps: true,
-    minimize: false, // Garante que o objeto couponInfo seja salvo mesmo se estiver vazio
+    minimize: false,
   }
 );
 
-// Hook para recalcular o sumário ANTES de qualquer operação de save
+cartSchema.index({ expireAt: 1 }, { expireAfterSeconds: 0 });
+
+// Função auxiliar para arredondar para 2 casas decimais
+const roundToTwo = (num) => Math.round((num + Number.EPSILON) * 100) / 100;
+
 cartSchema.pre('save', function (next) {
   const cart = this;
 
-  // 1. Calcula os totais baseados nos itens
+  if (cart.guestCartId) {
+    cart.expireAt = new Date(Date.now() + GUEST_CART_LIFESPAN_SECONDS * 1000);
+  } else {
+    cart.expireAt = undefined;
+  }
+
   let calculatedSubtotal = 0;
   let calculatedItemsDiscount = 0;
   cart.totalItems = cart.items.reduce((sum, item) => {
@@ -69,16 +82,17 @@ cartSchema.pre('save', function (next) {
     return sum + item.quantity;
   }, 0);
 
-  cart.subtotal = calculatedSubtotal;
-  cart.itemsDiscount = calculatedItemsDiscount;
+  // --- AJUSTE AQUI: Arredonda todos os valores calculados ---
+  cart.subtotal = roundToTwo(calculatedSubtotal);
+  cart.itemsDiscount = roundToTwo(calculatedItemsDiscount);
+  
+  // O couponDiscount já é calculado com precisão no service, mas arredondamos por segurança
+  cart.couponDiscount = roundToTwo(cart.couponDiscount);
 
-  // 2. O campo 'couponDiscount' é controlado pelo serviço, então apenas o usamos aqui
-  cart.totalDiscount = cart.itemsDiscount + cart.couponDiscount;
+  cart.totalDiscount = roundToTwo(cart.itemsDiscount + cart.couponDiscount);
+  cart.total = roundToTwo(cart.subtotal - cart.totalDiscount);
+  // --- FIM DO AJUSTE ---
 
-  // 3. Calcula o total final
-  cart.total = cart.subtotal - cart.totalDiscount;
-
-  // 4. Garante que o couponInfo seja nulo se não houver cupom
   if (!cart.activeCouponCode) {
     cart.couponInfo = null;
   }
