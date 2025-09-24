@@ -1,5 +1,6 @@
 const userService = require('../services/user.service');
 const addressService = require('../services/address.service');
+const orderService = require('../services/order.service');
 const asyncHandler = require('../utils/asyncHandler');
 const ResponseBuilder = require('../utils/responseBuilder');
 
@@ -101,6 +102,27 @@ const deleteMyAddress = asyncHandler(async (req, res, next) => {
 
   res.status(200).json(response);
 });
+const listMyOrders = asyncHandler(async (req, res, next) => {
+  const result = await orderService.listUserOrders(req.user.id, req.query);
+  const response = new ResponseBuilder()
+    .withStatus('success')
+    .withMessage(result.message)
+    .withPagination(result.details)
+    .withData(result.data)
+    .build();
+  res.status(200).json(response);
+});
+
+const getMyOrderDetails = asyncHandler(async (req, res, next) => {
+  const { orderId } = req.params;
+  const result = await orderService.getUserOrderDetails(req.user.id, orderId);
+  const response = new ResponseBuilder()
+    .withStatus('success')
+    .withMessage(result.message)
+    .withData(result.data)
+    .build();
+  res.status(200).json(response);
+});
 
 module.exports = {
   getMyProfile,
@@ -111,4 +133,6 @@ module.exports = {
   addMyAddress,
   updateMyAddress,
   deleteMyAddress,
+  listMyOrders,
+  getMyOrderDetails,
 };

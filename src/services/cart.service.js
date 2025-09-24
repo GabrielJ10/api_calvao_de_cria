@@ -203,7 +203,9 @@ const applyCoupon = async (identifier, couponCode) => {
     
     const updatedCart = await cart.save();
     
-    return { data: cartTransformer.transform(updatedCart) };
+    return { data: cartTransformer.transform(updatedCart),
+  
+    };
 };
 
 const removeCoupon = async (identifier) => {

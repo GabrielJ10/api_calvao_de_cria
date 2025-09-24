@@ -9,6 +9,7 @@ const {
   getAddressDetailsRules,
   deleteAddressRules,
 } = require('../utils/validators/address.validator');
+const { mongoIdRule } = require('../utils/validators/validation.utils'); 
 
 const router = express.Router();
 
@@ -30,5 +31,9 @@ router
   .get(getAddressDetailsRules(), validate, userController.getMyAddressDetails)
   .patch(updateAddressRules(), validate, userController.updateMyAddress)
   .delete(deleteAddressRules(), validate, userController.deleteMyAddress);
+
+  // --- ROTAS DE PEDIDOS ---
+router.get('/me/orders', userController.listMyOrders); // [cite: 161, 162]
+router.get('/me/orders/:orderId', mongoIdRule('orderId', 'ID de pedido inválido.'), validate, userController.getMyOrderDetails); // [cite: 200, 201]
 
 module.exports = router;

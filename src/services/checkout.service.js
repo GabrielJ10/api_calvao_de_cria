@@ -96,17 +96,38 @@ const createOrder = async (userId, { addressId, paymentMethodIdentifier, couponC
         throw new AppError('Método de pagamento inválido ou indisponível.', 400);
     }
     
-    // 4. Validar e Aplicar Cupom (se houver)
-    let finalCart = cart;
+    // 4. LÓGICA REVISADA: Validar e Aplicar Cupom diretamente aqui
     if (couponCode) {
-        // Reutiliza a lógica do cart.service para aplicar o cupom de forma segura
-        const { applyCoupon } = require('./cart.service'); // Importação tardia para evitar ciclo
-        const couponResult = await applyCoupon({ userId }, couponCode);
-        finalCart = couponResult.cart; // Pega o carrinho recalculado do serviço
+        const coupon = await couponRepository.findByCode(couponCode);
+        const subtotalAfterItemDiscounts = cart.items.reduce((sum, item) => sum + item.totalItemPrice, 0);
+
+        if (!coupon) {
+            throw new AppError('Cupom inválido ou expirado.', 400);
+        }
+        if (subtotalAfterItemDiscounts < coupon.minPurchaseValue) {
+            throw new AppError(`O valor mínimo da compra para usar este cupom é de R$ ${coupon.minPurchaseValue.toFixed(2)}.`, 400);
+        }
+        
+        cart.activeCouponCode = coupon.code;
+        cart.couponInfo = { code: coupon.code, description: coupon.description };
+
+        if (coupon.type === 'fixed') {
+            cart.couponDiscount = Math.min(coupon.value, subtotalAfterItemDiscounts);
+        } else { // percentage
+            cart.couponDiscount = (subtotalAfterItemDiscounts * coupon.value) / 100;
+        }
+    } else {
+        // Garante que nenhum cupom antigo permaneça no carrinho
+        cart.activeCouponCode = null;
+        cart.couponInfo = null;
+        cart.couponDiscount = 0;
     }
 
+    // 5. RECALCULAR E SALVAR: Persiste as alterações e aciona o hook pre('save') do Mongoose
+    // Isso garante que todos os totais sejam recalculados com o desconto do cupom.
+    const finalCart = await cart.save();
 
-    // 5. Estruturar dados do pedido (Imutabilidade)
+    // 6. Estruturar dados do pedido (usando o carrinho agora correto)
     const orderData = {
         orderNumber: await generateOrderNumber(),
         userId,
@@ -145,15 +166,16 @@ const createOrder = async (userId, { addressId, paymentMethodIdentifier, couponC
         }
     };
 
-    // 6. Criar o pedido, abater estoque e limpar carrinho de forma transacional
+    // 7. Criar o pedido de forma transacional
     const newOrder = await orderRepository.createOrderTransactional(orderData);
 
-    // 7. Transformar e retornar a resposta
+    // 8. Transformar e retornar a resposta
     return {
         data: orderTransformer.transformOrderForCustomer(newOrder),
         message: 'Pedido criado com sucesso.',
     };
 };
+
 
 
 module.exports = {
