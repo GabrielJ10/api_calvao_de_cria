@@ -122,14 +122,14 @@ const validate = (req, res, next) => {
     return next();
   }
 
-  if (req.path === '/register') {
-    return next(
-      new AppError(
-        'Não foi possível realizar o cadastro. Por favor, verifique os dados informados.',
-        400
-      )
-    );
-  }
+  // if (req.path === '/register') {
+  //   return next(
+  //     new AppError(
+  //       'Não foi possível realizar o cadastro. Por favor, verifique os dados informados.',
+  //       400
+  //     )
+  //   );
+  // }
 
   const extractedErrors = errors.array().map((err) => ({ [err.path]: err.msg }));
   return res.status(422).json({
