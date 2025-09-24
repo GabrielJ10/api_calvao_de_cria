@@ -7,6 +7,7 @@ const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const productRoutes = require('./routes/product.routes');
 const cartRoutes = require('./routes/cart.routes');
+const checkoutRoutes = require('./routes/checkout.routes');
 const productAdminRoutes = require('./routes/admin/product.admin.routes');
 const orderAdminRoutes = require('./routes/admin/order.admin.routes');
 const userAdminRoutes = require('./routes/admin/user.admin.routes');
@@ -28,6 +29,7 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/products', productRoutes);
 app.use('/api/v1/cart', cartRoutes);
+app.use('/api/v1', checkoutRoutes);
 
 
 // Rotas de admin

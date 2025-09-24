@@ -112,10 +112,15 @@ const findSummaryByUserId = async (userId) => {
   };
 };
 
+const findLastByDatePrefix = async (datePrefix) => {
+  return Order.findOne({ orderNumber: { $regex: `^${datePrefix}` } }).sort({ orderNumber: -1 });
+};
+
 module.exports = {
   createOrderTransactional,
   findAllAdmin,
   findByIdAdmin,
   updateByIdAdmin,
   findSummaryByUserId,
+  findLastByDatePrefix,
 };
