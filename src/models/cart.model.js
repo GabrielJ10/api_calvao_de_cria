@@ -61,6 +61,12 @@ const cartSchema = new mongoose.Schema(
 cartSchema.index({ expireAt: 1 }, { expireAfterSeconds: 0 });
 
 // Função auxiliar para arredondar para 2 casas decimais
+
+
+
+
+
+
 const roundToTwo = (num) => Math.round((num + Number.EPSILON) * 100) / 100;
 
 cartSchema.pre('save', function (next) {
@@ -72,26 +78,33 @@ cartSchema.pre('save', function (next) {
     cart.expireAt = undefined;
   }
 
-  let calculatedSubtotal = 0;
-  let calculatedItemsDiscount = 0;
+  // --- LÓGICA DE CÁLCULO CORRIGIDA ---
+
+  let grossValue = 0; // Valor bruto total (preço cheio)
+  let subtotalAfterPromotions = 0; // Valor com descontos de itens, mas antes de cupons
+
   cart.totalItems = cart.items.reduce((sum, item) => {
-    calculatedSubtotal += item.price * item.quantity;
-    if (item.promotionalPrice) {
-      calculatedItemsDiscount += (item.price - item.promotionalPrice) * item.quantity;
-    }
+    grossValue += item.price * item.quantity;
+    subtotalAfterPromotions += item.totalItemPrice; // Usa o valor já calculado que considera a promoção
     return sum + item.quantity;
   }, 0);
 
-  // --- AJUSTE AQUI: Arredonda todos os valores calculados ---
-  cart.subtotal = roundToTwo(calculatedSubtotal);
-  cart.itemsDiscount = roundToTwo(calculatedItemsDiscount);
+  // 1. Calcula os descontos dos próprios itens
+  const itemsDiscount = grossValue - subtotalAfterPromotions;
   
-  // O couponDiscount já é calculado com precisão no service, mas arredondamos por segurança
-  cart.couponDiscount = roundToTwo(cart.couponDiscount);
+  // 2. Garante que o couponDiscount (que veio do serviço) seja um número e arredondado
+  const couponDiscount = cart.couponDiscount || 0;
 
+  // 3. Define os totais com base nos valores corretos
+  cart.subtotal = roundToTwo(grossValue);
+  cart.itemsDiscount = roundToTwo(itemsDiscount);
+  cart.couponDiscount = roundToTwo(couponDiscount);
   cart.totalDiscount = roundToTwo(cart.itemsDiscount + cart.couponDiscount);
   cart.total = roundToTwo(cart.subtotal - cart.totalDiscount);
-  // --- FIM DO AJUSTE ---
+
+
+
+
 
   if (!cart.activeCouponCode) {
     cart.couponInfo = null;

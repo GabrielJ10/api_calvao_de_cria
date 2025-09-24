@@ -112,10 +112,45 @@ const findSummaryByUserId = async (userId) => {
   };
 };
 
+const findLastByDatePrefix = async (datePrefix) => {
+  return Order.findOne({ orderNumber: { $regex: `^${datePrefix}` } }).sort({ orderNumber: -1 });
+};
+
+/**
+ * [CLIENTE] Encontra todos os pedidos de um usuário com paginação.
+ * @param {string} userId - O ID do usuário.
+ * @param {object} options - Opções de paginação e ordenação.
+ * @returns {Promise<{orders: Document[], total: number}>}
+ */
+const findAllByUserId = async (userId, options) => {
+  const filters = { userId };
+  const query = Order.find(filters)
+    .sort(options.sort)
+    .skip(options.skip)
+    .limit(options.limit);
+
+  const orders = await query;
+  const total = await Order.countDocuments(filters);
+  return { orders, total };
+};
+
+/**
+ * [CLIENTE] Encontra um pedido específico pelo seu ID e pelo ID do usuário.
+ * @param {string} orderId - O ID do pedido.
+ * @param {string} userId - O ID do usuário.
+ * @returns {Promise<Document|null>}
+ */
+const findByIdAndUserId = async (orderId, userId) => {
+  return Order.findOne({ _id: orderId, userId });
+};
+
 module.exports = {
   createOrderTransactional,
   findAllAdmin,
   findByIdAdmin,
   updateByIdAdmin,
   findSummaryByUserId,
+  findLastByDatePrefix,
+  findAllByUserId,
+  findByIdAndUserId,
 };
