@@ -10,7 +10,7 @@ const listUserOrders = async (userId, queryParams) => {
 
     const { orders, total } = await orderRepository.findAllByUserId(userId, options);
 
-    const transformedOrders = orders.map(orderTransformer.transformOrderSummaryForCustomer);
+    const transformedOrders = orders.map(orderTransformer.transformOrderForCustomer);
 
     const details = {
         totalItems: total,
