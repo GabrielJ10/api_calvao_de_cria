@@ -1,12 +1,25 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
+interface User {
+  email: string;
+  name: string;
+}
+
 class Email {
-  constructor(user, url) {
+  private to: string;
+  private firstName: string;
+  private url: string;
+  private from: string;
+
+  constructor(user: User, url: string) {
     this.to = user.email;
     this.firstName = user.name.split(' ')[0];
     this.url = url;
     this.from = `Calvão de Cria <${process.env.EMAIL_FROM}>`;
   }
 
-  async send(subject, message) {
+  async send(subject: string, message: string): Promise<void> {
     const emailContent = {
       to: this.to,
       from: this.from,
@@ -31,11 +44,11 @@ class Email {
     //    });
   }
 
-  async sendPasswordReset() {
+  async sendPasswordReset(): Promise<void> {
     const subject = 'Seu token para redefinição de senha (válido por 10 minutos)';
     const message = `Esqueceu sua senha? Envie uma requisição PATCH com sua nova senha para: ${this.url}.\nSe você não esqueceu sua senha, por favor ignore este e-mail!`;
     await this.send(subject, message);
   }
 }
 
-module.exports = Email;
+export default Email;
