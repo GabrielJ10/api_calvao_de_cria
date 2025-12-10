@@ -6,7 +6,7 @@ import ResponseBuilder from '../../utils/responseBuilder';
 export class OrderAdminController {
   constructor(private adminOrderService: IOrderAdminService) {}
 
-  listOrders = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  listOrders = asyncHandler(async (req: Request, res: Response) => {
     const result = await this.adminOrderService.listAllOrders(req.query);
     const response = new ResponseBuilder()
       .withStatus('success')
@@ -17,7 +17,7 @@ export class OrderAdminController {
     res.status(200).json(response);
   });
 
-  getOrderDetails = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  getOrderDetails = asyncHandler(async (req: Request, res: Response) => {
     const { orderId } = req.params;
     const result = await this.adminOrderService.getOrderDetails(orderId);
     const response = new ResponseBuilder()
@@ -28,7 +28,7 @@ export class OrderAdminController {
     res.status(200).json(response);
   });
 
-  updateOrder = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  updateOrder = asyncHandler(async (req: Request, res: Response) => {
     const { orderId } = req.params;
     const result = await this.adminOrderService.updateOrder(orderId, req.body);
     const response = new ResponseBuilder()
