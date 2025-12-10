@@ -85,7 +85,9 @@ describe('CheckoutService', () => {
       };
       mockCouponRepo.findByCode.mockResolvedValue(mockCoupon);
 
-      await expect(checkoutService.previewCoupon('user1', 'TEST10')).rejects.toThrow(AppError);
+      await expect(checkoutService.previewCoupon('user1', 'TEST10')).rejects.toThrow(
+        /valor mínimo/i
+      );
     });
   });
 
@@ -97,9 +99,8 @@ describe('CheckoutService', () => {
         subtotal: 100,
         itemsDiscount: 0,
         total: 100,
-        save: vi.fn().mockImplementation(function () {
-          return this;
-        }),
+        activeCouponCode: undefined,
+        save: vi.fn().mockReturnThis(),
       };
       mockCartRepo.findByIdentifier.mockResolvedValue(mockCart);
 

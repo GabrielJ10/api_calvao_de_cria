@@ -4,34 +4,39 @@ import adminProductService, {
 } from '../../services/admin/product.admin.service';
 import asyncHandler from '../../utils/asyncHandler';
 import ResponseBuilder from '../../utils/responseBuilder';
+import { ICreateProductDTO, IUpdateProductDTO, IProductQueryDTO } from '../../dtos/product.dto';
 
 export class ProductAdminController {
   constructor(private adminProductService: IProductAdminService) {}
 
-  createNewProduct = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    const files = (req as any).files;
-    const result = await this.adminProductService.createProduct(req.body, files);
-    const response = new ResponseBuilder()
-      .withStatus('success')
-      .withDetails(result.details)
-      .withMessage(result.message)
-      .withData(result.data)
-      .build();
+  createNewProduct = asyncHandler(
+    async (req: Request<{}, {}, ICreateProductDTO>, res: Response, next: NextFunction) => {
+      const files = (req as any).files;
+      const result = await this.adminProductService.createProduct(req.body, files);
+      const response = new ResponseBuilder()
+        .withStatus('success')
+        .withDetails(result.details)
+        .withMessage(result.message)
+        .withData(result.data)
+        .build();
 
-    res.status(201).json(response);
-  });
+      res.status(201).json(response);
+    }
+  );
 
-  getAllProducts = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    const result = await this.adminProductService.listProducts(req.query);
-    const response = new ResponseBuilder()
-      .withStatus('success')
-      .withMessage(result.message)
-      .withDetails(result.details)
-      .withData(result.data)
-      .build();
+  getAllProducts = asyncHandler(
+    async (req: Request<{}, {}, {}, IProductQueryDTO>, res: Response, next: NextFunction) => {
+      const result = await this.adminProductService.listProducts(req.query);
+      const response = new ResponseBuilder()
+        .withStatus('success')
+        .withMessage(result.message)
+        .withDetails(result.details)
+        .withData(result.data)
+        .build();
 
-    res.status(200).json(response);
-  });
+      res.status(200).json(response);
+    }
+  );
 
   getOneProduct = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const result = await this.adminProductService.productDetails(req.params.productId);
@@ -44,18 +49,24 @@ export class ProductAdminController {
     res.status(200).json(response);
   });
 
-  updateExistingProduct = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    const { productId } = req.params;
-    const result = await this.adminProductService.updateProduct(productId, req.body);
-    const response = new ResponseBuilder()
-      .withStatus('success')
-      .withMessage(result.message)
-      .withData(result.data)
-      .withDetails(result.details)
-      .build();
+  updateExistingProduct = asyncHandler(
+    async (
+      req: Request<{ productId: string }, {}, IUpdateProductDTO>,
+      res: Response,
+      next: NextFunction
+    ) => {
+      const { productId } = req.params;
+      const result = await this.adminProductService.updateProduct(productId, req.body);
+      const response = new ResponseBuilder()
+        .withStatus('success')
+        .withMessage(result.message)
+        .withData(result.data)
+        .withDetails(result.details)
+        .build();
 
-    res.status(200).json(response);
-  });
+      res.status(200).json(response);
+    }
+  );
 
   deleteExistingProduct = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const { productId } = req.params;

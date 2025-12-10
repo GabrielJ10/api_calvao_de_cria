@@ -2,11 +2,15 @@ import request from 'supertest';
 import { describe, it, expect, beforeEach, vi, beforeAll } from 'vitest';
 import app from '../../app';
 import jwt from 'jsonwebtoken';
-import Product from '../../models/product.model';
+import {
+  UserFactory,
+  ProductFactory,
+  AddressFactory,
+  CartFactory,
+  PaymentMethodFactory,
+} from '../../tests/factories';
 import Cart from '../../models/cart.model';
-import User from '../../models/user.model';
-import Address from '../../models/address.model';
-import PaymentMethod from '../../models/paymentMethod.model';
+import Order from '../../models/order.model';
 import mongoose from 'mongoose';
 
 // Ensure cloudinary is mocked
@@ -37,55 +41,26 @@ describe('Checkout Routes Integration', () => {
 
   beforeEach(async () => {
     // 1. Seed User
-    const user = await User.create({
-      name: 'Checkout User',
-      email: 'checkout@example.com',
-      passwordHash: 'hash',
-      cpf: '11122233344',
-      phone: '999999999',
-    });
-    userId = user._id.toString();
+    const user = await UserFactory.create();
+    userId = (user._id as mongoose.Types.ObjectId).toString();
     token = jwt.sign({ userId, role: 'customer' }, TEST_SECRET, { expiresIn: '1h' });
 
     // 2. Seed Address
-    const address = await Address.create({
-      userId: user._id,
-      alias: 'Casa',
-      recipientName: 'Recipient',
-      street: 'Rua Teste',
-      number: '123',
-      neighborhood: 'Bairro',
-      city: 'Cidade',
-      state: 'ES',
-      cep: '29000-000',
-      phone: '27999999999',
-    });
-    addressId = address._id.toString();
+    const address = await AddressFactory.create(user._id as mongoose.Types.ObjectId);
+    addressId = (address._id as mongoose.Types.ObjectId).toString();
 
     // 3. Seed Payment Method
-    await PaymentMethod.create({
-      identifier: 'pix',
-      name: 'Pix',
-      isEnabled: true,
-    });
+    await PaymentMethodFactory.create({ identifier: 'pix', name: 'Pix' });
 
     // 4. Seed Product
-    const product = await Product.create({
-      name: 'Checkout Product',
-      description: 'Test Description',
-      price: 50.0,
-      stockQuantity: 100,
-      isActive: true,
-      mainImageUrl: 'http://img.com/p.png',
-    });
-    productId = product._id.toString();
+    const product = await ProductFactory.create({ price: 50.0, stockQuantity: 100 });
+    productId = (product._id as mongoose.Types.ObjectId).toString();
 
     // 5. Seed Cart with Item
-    const cart = await Cart.create({
-      userId: user._id,
+    await CartFactory.create(user._id as mongoose.Types.ObjectId, {
       items: [
         {
-          productId: product._id,
+          productId: product._id as mongoose.Types.ObjectId,
           name: product.name,
           quantity: 2,
           price: 50.0,
@@ -113,6 +88,19 @@ describe('Checkout Routes Integration', () => {
       expect(res.body.data.orderNumber).toBeDefined();
       expect(res.body.data.status).toBe('AWAITING_PAYMENT');
       expect(res.body.data.totals.total).toBe(100.0);
+
+      // Verify Side Effects
+      // 1. Cart should be cleared
+      const updatedCart = await Cart.findOne({ userId });
+      expect(updatedCart).toBeTruthy();
+      expect(updatedCart?.items.length).toBe(0);
+      expect(updatedCart?.subtotal).toBe(0);
+
+      // 2. Order should exist in DB
+      const order = await Order.findOne({ orderNumber: res.body.data.orderNumber });
+      expect(order).toBeTruthy();
+      expect(order?.userId.toString()).toBe(userId);
+      expect(order?.payment.method).toBe('pix');
     });
 
     it('should fail if cart is empty', async () => {
@@ -128,6 +116,7 @@ describe('Checkout Routes Integration', () => {
         });
 
       expect(res.status).toBe(400); // Bad Request
+      expect(res.body.message).toMatch(/vazio/i);
     });
   });
 });

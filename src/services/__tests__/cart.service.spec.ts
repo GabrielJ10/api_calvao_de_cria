@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { ICartItem } from '../../models/cart.model';
 
 // Mock dependencies BEFORE import to prevent side-effects during module load
 vi.mock('../repositories/cart.repository', () => ({
@@ -59,10 +60,10 @@ describe('CartService', () => {
       mockProductRepo.findByIdPublic.mockResolvedValue(mockProduct);
 
       const mockCart = {
-        items: [],
-        save: vi.fn().mockImplementation(function () {
-          return this;
-        }),
+        items: [] as ICartItem[],
+        couponDiscount: 0,
+        activeCouponCode: undefined,
+        save: vi.fn().mockReturnThis(),
       };
       mockCartRepo.findByIdentifier.mockResolvedValue(mockCart);
 
@@ -71,11 +72,25 @@ describe('CartService', () => {
         { productId: 'prod1', quantity: 2 }
       );
 
+      // Verify item was added with all correct properties
       expect(mockCart.items).toHaveLength(1);
-      expect(mockCart.items[0].quantity).toBe(2);
-      expect(mockCart.items[0].unitPrice).toBe(90); // Promotional price
-      expect(mockCart.items[0].totalItemPrice).toBe(180);
+      expect(mockCart.items[0]).toMatchObject({
+        productId: 'prod1',
+        name: 'Product 1',
+        mainImageUrl: 'url',
+        quantity: 2,
+        price: 100,
+        promotionalPrice: 90,
+        unitPrice: 90, // Promotional price
+        totalItemPrice: 180,
+      });
+
+      // Verify cart was saved
       expect(mockCart.save).toHaveBeenCalled();
+
+      // Verify return structure
+      expect(result).toHaveProperty('data');
+      expect(result.details).toBeFalsy(); // No coupon removed (can be null or undefined)
     });
 
     it('should throw 409 if stock is insufficient', async () => {
@@ -93,7 +108,7 @@ describe('CartService', () => {
 
       await expect(
         cartService.addItemToCart({ userId: 'user1' }, { productId: 'prod1', quantity: 2 })
-      ).rejects.toThrow(AppError); // Check for specific error message if possible
+      ).rejects.toThrow(/excede o estoque/i);
     });
   });
 
@@ -105,10 +120,10 @@ describe('CartService', () => {
       mockCartRepo.findByGuestCartId.mockResolvedValue(guestCart);
 
       const userCart = {
-        items: [{ productId: 'prod1', quantity: 1, unitPrice: 100, totalItemPrice: 100 }],
-        save: vi.fn().mockImplementation(function () {
-          return this;
-        }),
+        items: [{ productId: 'prod1', quantity: 1, unitPrice: 100, totalItemPrice: 100 }] as any[],
+        couponDiscount: 0,
+        activeCouponCode: undefined,
+        save: vi.fn().mockReturnThis(),
       };
 
       // Mock getOrCreateCart behavior by mocking findByIdentifier for userId
@@ -116,10 +131,15 @@ describe('CartService', () => {
 
       const result = await cartService.mergeCarts('user1', 'guest1');
 
+      // Verify merge behavior
       expect(userCart.items).toHaveLength(1); // Should merge into existing item
       expect(userCart.items[0].quantity).toBe(2);
       expect(userCart.items[0].totalItemPrice).toBe(200);
       expect(mockCartRepo.deleteByGuestCartId).toHaveBeenCalledWith('guest1');
+
+      // Verify return structure
+      expect(result).toHaveProperty('data');
+      expect(userCart.save).toHaveBeenCalled();
     });
   });
 });
