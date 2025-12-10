@@ -3,13 +3,18 @@ import { Types } from 'mongoose';
 import AppError from '../utils/AppError';
 import addressTransformer from '../utils/transformers/address.transformer';
 import { IAddress } from '../models/address.model';
+import { ServiceResponse } from '../types/service.types';
 
 export interface IAddressService {
-  addAddress(userId: string, addressData: Partial<IAddress>): Promise<any>;
-  listAddressesSummary(userId: string): Promise<any>;
-  getAddressDetails(addressId: string, userId: string): Promise<any>;
-  updateAddress(addressId: string, userId: string, updateData: Partial<IAddress>): Promise<any>;
-  removeAddress(addressId: string, userId: string): Promise<any>;
+  addAddress(userId: string, addressData: Partial<IAddress>): Promise<ServiceResponse<any>>;
+  listAddressesSummary(userId: string): Promise<ServiceResponse<any[]>>;
+  getAddressDetails(addressId: string, userId: string): Promise<ServiceResponse<any>>;
+  updateAddress(
+    addressId: string,
+    userId: string,
+    updateData: Partial<IAddress>
+  ): Promise<ServiceResponse<any>>;
+  removeAddress(addressId: string, userId: string): Promise<ServiceResponse<null>>;
 }
 
 export class AddressService implements IAddressService {

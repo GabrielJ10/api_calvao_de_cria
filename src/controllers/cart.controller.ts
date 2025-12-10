@@ -3,21 +3,16 @@ import cartService, { ICartService, CartIdentifier } from '../services/cart.serv
 import asyncHandler from '../utils/asyncHandler';
 import ResponseBuilder from '../utils/responseBuilder';
 
-interface CartRequest extends Request {
-  cartIdentifier?: CartIdentifier;
-  user?: any;
-}
-
 export class CartController {
   constructor(private cartService: ICartService) {}
 
-  getCart = asyncHandler(async (req: CartRequest, res: Response, next: NextFunction) => {
+  getCart = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const { data } = await this.cartService.getCart(req.cartIdentifier!);
     const response = new ResponseBuilder().withData(data).build();
     res.status(200).json(response);
   });
 
-  addItemToCart = asyncHandler(async (req: CartRequest, res: Response, next: NextFunction) => {
+  addItemToCart = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const { data, newGuestCartId, details } = await this.cartService.addItemToCart(
       req.cartIdentifier!,
       req.body
@@ -37,7 +32,7 @@ export class CartController {
     res.status(200).json(responseBuilder.build());
   });
 
-  updateItemQuantity = asyncHandler(async (req: CartRequest, res: Response, next: NextFunction) => {
+  updateItemQuantity = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const { productId } = req.params;
     const { quantity } = req.body;
     const { data, details } = await this.cartService.updateItemQuantity(
@@ -54,7 +49,7 @@ export class CartController {
     res.status(200).json(responseBuilder.build());
   });
 
-  removeItemFromCart = asyncHandler(async (req: CartRequest, res: Response, next: NextFunction) => {
+  removeItemFromCart = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const { productId } = req.params;
     const { data, details } = await this.cartService.removeItemFromCart(
       req.cartIdentifier!,
@@ -69,13 +64,13 @@ export class CartController {
     res.status(200).json(responseBuilder.build());
   });
 
-  mergeCarts = asyncHandler(async (req: CartRequest, res: Response, next: NextFunction) => {
+  mergeCarts = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const { guestCartId } = req.body;
-    const { data } = await this.cartService.mergeCarts(req.user.id, guestCartId);
+    const { data } = await this.cartService.mergeCarts(req.user!.id, guestCartId);
     res.status(200).json(new ResponseBuilder().withData(data).build());
   });
 
-  applyCoupon = asyncHandler(async (req: CartRequest, res: Response, next: NextFunction) => {
+  applyCoupon = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const { couponCode } = req.body;
     const { data } = await this.cartService.applyCoupon(req.cartIdentifier!, couponCode);
     res
@@ -85,7 +80,7 @@ export class CartController {
       );
   });
 
-  removeCoupon = asyncHandler(async (req: CartRequest, res: Response, next: NextFunction) => {
+  removeCoupon = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const { data } = await this.cartService.removeCoupon(req.cartIdentifier!);
     res
       .status(200)

@@ -3,11 +3,12 @@ import bcrypt from 'bcryptjs';
 import AppError from '../utils/AppError';
 import userTransformer from '../utils/transformers/user.transformer';
 import { IUser } from '../models/user.model';
+import { ServiceResponse } from '../types/service.types';
 
 export interface IUserService {
-  getUserProfile(userId: string): Promise<any>;
-  updateUserProfile(userId: string, updateData: Partial<IUser>): Promise<any>;
-  changePassword(userId: string, newPassword: any): Promise<any>;
+  getUserProfile(userId: string): Promise<ServiceResponse<any>>;
+  updateUserProfile(userId: string, updateData: Partial<IUser>): Promise<ServiceResponse<any>>;
+  changePassword(userId: string, newPassword: string): Promise<ServiceResponse<null>>;
 }
 
 export class UserService implements IUserService {
@@ -40,7 +41,7 @@ export class UserService implements IUserService {
     };
   }
 
-  async changePassword(userId: string, newPassword: any) {
+  async changePassword(userId: string, newPassword: string) {
     const passwordHash = await bcrypt.hash(newPassword, 10);
     await this.userRepository.updateById(userId, { passwordHash });
     await this.userRepository.updateById(userId, { currentRefreshTokenHash: undefined });

@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { MulterFile } from '../../types/express';
 import adminProductService, {
   IProductAdminService,
 } from '../../services/admin/product.admin.service';
@@ -11,7 +12,7 @@ export class ProductAdminController {
 
   createNewProduct = asyncHandler(
     async (req: Request<{}, {}, ICreateProductDTO>, res: Response, next: NextFunction) => {
-      const files = (req as any).files;
+      const files = req.files as MulterFile[] | undefined;
       const result = await this.adminProductService.createProduct(req.body, files);
       const response = new ResponseBuilder()
         .withStatus('success')
@@ -83,7 +84,7 @@ export class ProductAdminController {
 
   addProductImages = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const { productId } = req.params;
-    const files = (req as any).files;
+    const files = req.files as MulterFile[] | undefined;
     const result = await this.adminProductService.addProductImages(productId, req.body, files);
     const response = new ResponseBuilder()
       .withStatus('success')

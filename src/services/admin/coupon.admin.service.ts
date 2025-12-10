@@ -1,13 +1,14 @@
 import couponRepository, { ICouponRepository } from '../../repositories/coupon.repository';
 import AppError from '../../utils/AppError';
 import { ICoupon } from '../../models/coupon.model';
+import { ServiceResponse, ServiceResponseWithPagination } from '../../types/service.types';
 
 export interface ICouponAdminService {
-  listCoupons(queryParams: any): Promise<any>;
-  createCoupon(couponData: Partial<ICoupon>): Promise<any>;
-  getCouponDetails(couponId: string): Promise<any>;
-  updateCoupon(couponId: string, updateData: Partial<ICoupon>): Promise<any>;
-  deleteCoupon(couponId: string): Promise<any>;
+  listCoupons(queryParams: any): Promise<ServiceResponseWithPagination<ICoupon[]>>;
+  createCoupon(couponData: Partial<ICoupon>): Promise<ServiceResponse<ICoupon>>;
+  getCouponDetails(couponId: string): Promise<ServiceResponse<ICoupon>>;
+  updateCoupon(couponId: string, updateData: Partial<ICoupon>): Promise<ServiceResponse<ICoupon>>;
+  deleteCoupon(couponId: string): Promise<ServiceResponse<null>>;
 }
 
 export class CouponAdminService implements ICouponAdminService {

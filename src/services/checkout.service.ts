@@ -9,14 +9,15 @@ import AppError from '../utils/AppError';
 import orderTransformer from '../utils/transformers/order.transformer';
 import pixService, { IPixService } from './payment/pix.service';
 import { IOrder } from '../models/order.model';
+import { ServiceResponse } from '../types/service.types';
 
 export interface ICheckoutService {
-  getPaymentMethods(): Promise<any>;
-  previewCoupon(userId: string, couponCode: string): Promise<any>;
+  getPaymentMethods(): Promise<ServiceResponse<any[]>>;
+  previewCoupon(userId: string, couponCode: string): Promise<ServiceResponse<any>>;
   createOrder(
     userId: string,
     input: { addressId: string; paymentMethodIdentifier: string; couponCode?: string }
-  ): Promise<any>;
+  ): Promise<ServiceResponse<any>>;
 }
 
 export class CheckoutService implements ICheckoutService {

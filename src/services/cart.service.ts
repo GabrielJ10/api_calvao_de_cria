@@ -6,6 +6,7 @@ import couponRepository, { ICouponRepository } from '../repositories/coupon.repo
 import AppError from '../utils/AppError';
 import cartTransformer from '../utils/transformers/cart.transformer';
 import { ICart } from '../models/cart.model';
+import { ServiceResponse } from '../types/service.types';
 
 export interface CartIdentifier {
   userId?: string;
@@ -13,16 +14,20 @@ export interface CartIdentifier {
 }
 
 export interface ICartService {
-  getCart(identifier: CartIdentifier): Promise<any>;
+  getCart(identifier: CartIdentifier): Promise<ServiceResponse<any>>;
   addItemToCart(
     identifier: CartIdentifier,
     item: { productId: string; quantity: number }
-  ): Promise<any>;
-  updateItemQuantity(identifier: CartIdentifier, productId: string, quantity: number): Promise<any>;
-  removeItemFromCart(identifier: CartIdentifier, productId: string): Promise<any>;
-  mergeCarts(userId: string, guestCartId: string): Promise<any>;
-  applyCoupon(identifier: CartIdentifier, couponCode: string): Promise<any>;
-  removeCoupon(identifier: CartIdentifier): Promise<any>;
+  ): Promise<ServiceResponse<any> & { newGuestCartId?: string }>;
+  updateItemQuantity(
+    identifier: CartIdentifier,
+    productId: string,
+    quantity: number
+  ): Promise<ServiceResponse<any>>;
+  removeItemFromCart(identifier: CartIdentifier, productId: string): Promise<ServiceResponse<any>>;
+  mergeCarts(userId: string, guestCartId: string): Promise<ServiceResponse<any>>;
+  applyCoupon(identifier: CartIdentifier, couponCode: string): Promise<ServiceResponse<any>>;
+  removeCoupon(identifier: CartIdentifier): Promise<ServiceResponse<any>>;
 }
 
 export class CartService implements ICartService {

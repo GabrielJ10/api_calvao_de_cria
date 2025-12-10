@@ -11,15 +11,27 @@ import { IUser } from '../models/user.model';
 import dotenv from 'dotenv';
 import { Types } from 'mongoose';
 
+import { ServiceResponse } from '../types/service.types';
+import {
+  IRegisterDTO,
+  IUserWithTokens,
+  ITokens,
+  IResetPasswordTokenResponse,
+} from '../dtos/auth.dto';
+
 dotenv.config();
 
 export interface IAuthService {
-  register(userData: any): Promise<any>;
-  login(email: string, password: string): Promise<any>;
-  logout(userId: string): Promise<any>;
-  refreshAccessToken(token: string): Promise<any>;
-  forgotPassword(email: string, protocol: string, host: string): Promise<any>;
-  resetPassword(token: string, newPassword: any): Promise<any>;
+  register(userData: IRegisterDTO): Promise<ServiceResponse<IUserWithTokens>>;
+  login(email: string, password: string): Promise<ServiceResponse<IUserWithTokens>>;
+  logout(userId: string): Promise<ServiceResponse<null>>;
+  refreshAccessToken(token: string): Promise<ServiceResponse<ITokens>>;
+  forgotPassword(
+    email: string,
+    protocol: string,
+    host: string
+  ): Promise<ServiceResponse<IResetPasswordTokenResponse> | undefined>;
+  resetPassword(token: string, newPassword: string): Promise<ServiceResponse<null>>;
 }
 
 export class AuthService implements IAuthService {
@@ -42,7 +54,7 @@ export class AuthService implements IAuthService {
     return { accessToken, refreshToken };
   }
 
-  async register(userData: any) {
+  async register(userData: IRegisterDTO) {
     const { password, role, ...restUserData } = userData;
     const passwordHash = await bcrypt.hash(password, 10);
 
@@ -172,7 +184,7 @@ export class AuthService implements IAuthService {
     };
   }
 
-  async resetPassword(token: string, newPassword: any) {
+  async resetPassword(token: string, newPassword: string) {
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
     const user = await this.userRepository.findByPasswordResetToken(hashedToken);

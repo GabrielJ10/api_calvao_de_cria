@@ -28,8 +28,8 @@ export class AuthController {
     res.status(200).json(response);
   });
 
-  logout = asyncHandler(async (req: any, res: Response, next: NextFunction) => {
-    const result = await this.authService.logout(req.user.id);
+  logout = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+    const result = await this.authService.logout(req.user!.id);
     const response = new ResponseBuilder()
       .withStatus('success')
       .withMessage(result.message || '')

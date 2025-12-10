@@ -3,6 +3,7 @@ import AppError from '../../utils/AppError';
 import storage from '../../services/storage/storageFactory';
 import productTransformer from '../../utils/transformers/product.transformer';
 import { IImage } from '../../models/product.model';
+import { ServiceResponse, ServiceResponseWithPagination } from '../../types/service.types';
 
 const MAX_IMAGES = 5;
 
@@ -12,14 +13,14 @@ const DEFAULT_IMAGE = {
 };
 
 export interface IProductAdminService {
-  createProduct(rawProductData: any, files?: any[]): Promise<any>;
-  listProducts(queryParams: any): Promise<any>;
-  productDetails(productId: string): Promise<any>;
-  updateProduct(productId: string, updateData: any): Promise<any>;
-  deleteProduct(productId: string): Promise<any>;
-  updateProductImages(productId: string, ids: any): Promise<any>;
-  addProductImages(productId: string, rawData: any, files?: any[]): Promise<any>;
-  deleteProductImages(productId: string, ids: any): Promise<any>;
+  createProduct(rawProductData: any, files?: any[]): Promise<ServiceResponse<any>>;
+  listProducts(queryParams: any): Promise<ServiceResponseWithPagination<any[]>>;
+  productDetails(productId: string): Promise<ServiceResponse<any>>;
+  updateProduct(productId: string, updateData: any): Promise<ServiceResponse<any>>;
+  deleteProduct(productId: string): Promise<ServiceResponse<null>>;
+  updateProductImages(productId: string, ids: any): Promise<ServiceResponse<any>>;
+  addProductImages(productId: string, rawData: any, files?: any[]): Promise<ServiceResponse<any>>;
+  deleteProductImages(productId: string, ids: any): Promise<ServiceResponse<any>>;
 }
 
 export class ProductAdminService implements IProductAdminService {

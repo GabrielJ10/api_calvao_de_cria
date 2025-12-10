@@ -3,11 +3,15 @@ import paymentMethodRepository, {
 } from '../../repositories/paymentMethod.repository';
 import AppError from '../../utils/AppError';
 import { IPaymentMethod } from '../../models/paymentMethod.model';
+import { ServiceResponse } from '../../types/service.types';
 
 export interface IPaymentMethodAdminService {
-  listPaymentMethods(): Promise<any>;
-  createPaymentMethod(data: Partial<IPaymentMethod>): Promise<any>;
-  updatePaymentMethod(methodId: string, updateData: Partial<IPaymentMethod>): Promise<any>;
+  listPaymentMethods(): Promise<ServiceResponse<IPaymentMethod[]>>;
+  createPaymentMethod(data: Partial<IPaymentMethod>): Promise<ServiceResponse<IPaymentMethod>>;
+  updatePaymentMethod(
+    methodId: string,
+    updateData: Partial<IPaymentMethod>
+  ): Promise<ServiceResponse<IPaymentMethod>>;
 }
 
 export class PaymentMethodAdminService implements IPaymentMethodAdminService {

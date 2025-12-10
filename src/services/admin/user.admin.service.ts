@@ -4,11 +4,16 @@ import orderRepository, { IOrderRepository } from '../../repositories/order.repo
 import authService, { IAuthService } from '../auth.service';
 import AppError from '../../utils/AppError';
 import userTransformer from '../../utils/transformers/user.transformer';
+import { ServiceResponse, ServiceResponseWithPagination } from '../../types/service.types';
 
 export interface IUserAdminService {
-  listCustomers(queryParams: any): Promise<any>;
-  getCustomerDetails360(userId: string): Promise<any>;
-  forcePasswordResetForUser(userId: string, protocol: string, host: string): Promise<any>;
+  listCustomers(queryParams: any): Promise<ServiceResponseWithPagination<any[]>>;
+  getCustomerDetails360(userId: string): Promise<ServiceResponse<any>>;
+  forcePasswordResetForUser(
+    userId: string,
+    protocol: string,
+    host: string
+  ): Promise<ServiceResponse<null>>;
 }
 
 export class UserAdminService implements IUserAdminService {

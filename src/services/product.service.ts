@@ -1,10 +1,11 @@
 import productRepository, { IProductRepository } from '../repositories/product.repository';
 import AppError from '../utils/AppError';
 import productTransformer from '../utils/transformers/product.transformer';
+import { ServiceResponse, ServiceResponseWithPagination } from '../types/service.types';
 
 export interface IProductService {
-  listPublicProducts(queryParams: any): Promise<any>;
-  getPublicProductDetails(productId: string): Promise<any>;
+  listPublicProducts(queryParams: any): Promise<ServiceResponseWithPagination<any[]>>;
+  getPublicProductDetails(productId: string): Promise<ServiceResponse<any>>;
 }
 
 export class ProductService implements IProductService {

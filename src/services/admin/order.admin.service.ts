@@ -1,10 +1,11 @@
 import orderRepository, { IOrderRepository } from '../../repositories/order.repository';
 import AppError from '../../utils/AppError';
+import { ServiceResponse, ServiceResponseWithPagination } from '../../types/service.types';
 
 export interface IOrderAdminService {
-  listAllOrders(queryParams: any): Promise<any>;
-  getOrderDetails(orderId: string): Promise<any>;
-  updateOrder(orderId: string, updateData: any): Promise<any>;
+  listAllOrders(queryParams: any): Promise<ServiceResponseWithPagination<any[]>>;
+  getOrderDetails(orderId: string): Promise<ServiceResponse<any>>;
+  updateOrder(orderId: string, updateData: any): Promise<ServiceResponse<any>>;
 }
 
 export class OrderAdminService implements IOrderAdminService {
