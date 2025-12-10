@@ -8,7 +8,7 @@ import ResponseBuilder from '../../utils/responseBuilder';
 export class PaymentMethodAdminController {
   constructor(private adminPaymentMethodService: IPaymentMethodAdminService) {}
 
-  listPaymentMethods = asyncHandler(async (req: Request, res: Response) => {
+  listPaymentMethods = asyncHandler(async (_: Request, res: Response) => {
     const result = await this.adminPaymentMethodService.listPaymentMethods();
     res
       .status(200)
