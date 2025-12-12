@@ -41,6 +41,13 @@ jobs:
           # Ensure test-report.json exists so the notifier has something to parse
           echo '{}' > test-report.json
           npm test || true
+        env:
+          NODE_ENV: test
+        continue-on-error: true
+
+      # 5. Run tests (generate JSON report) — use npm test which writes test-report.json
+      - name: generate JSON report
+        run: |
           node .\scripts\google-chat-notify.js
         env:
           NODE_ENV: test
