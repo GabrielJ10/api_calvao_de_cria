@@ -34,24 +34,18 @@ jobs:
       - name: Run linter
         run: npm run lint
 
-      # 5. Run tests (generate JSON report) — use npm test which writes test-report.json
+      # 5. Run tests (generate JSON report)
+      # Alteramos aqui para passar as flags --reporter=json e --outputFile
       - name: Run tests (generate JSON report)
         id: run_tests
         run: |
-          # Ensure test-report.json exists so the notifier has something to parse
-          echo '{}' > test-report.json
-          npm test || true
+          npx vitest --run --reporter=json --outputFile=test-report.json
         env:
           NODE_ENV: test
         continue-on-error: true
 
-      # 5. Run tests (generate JSON report) — use npm test which writes test-report.json
-      - name: generate JSON report
-        run: |
-          node .\scripts\google-chat-notify.js
-        env:
-          NODE_ENV: test
-        continue-on-error: true
+      # O passo "generate JSON report" que tinha "node .\scripts..." eu removi
+      # pois estava com sintaxe de Windows e era redundante.
 
       # 6. TypeScript build check
       - name: Build check
