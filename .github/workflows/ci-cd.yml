@@ -35,7 +35,6 @@ jobs:
         run: npm run lint
 
       # 5. Run tests (generate JSON report)
-      # Alteramos aqui para passar as flags --reporter=json e --outputFile
       - name: Run tests (generate JSON report)
         id: run_tests
         run: |
@@ -44,14 +43,10 @@ jobs:
           NODE_ENV: test
         continue-on-error: true
 
-      # O passo "generate JSON report" que tinha "node .\scripts..." eu removi
-      # pois estava com sintaxe de Windows e era redundante.
-
       # 6. TypeScript build check
       - name: Build check
         run: npm run build
 
-      # --- NOVOS PASSOS DE WEBHOOK ---
 
       # 7. Notify Google Chat with the test report (always run)
       - name: Notify Google Chat with test result
