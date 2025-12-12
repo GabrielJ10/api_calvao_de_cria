@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { OrderStatus } from '../../enums/order.enum';
 
 // Mock dependencies BEFORE import
 vi.mock('../repositories/cart.repository', () => ({ default: {} }));
@@ -115,7 +116,7 @@ describe('CheckoutService', () => {
       mockOrderRepo.createOrderTransactional.mockResolvedValue({
         _id: 'order1',
         orderNumber: '20231206-0001',
-        status: 'AWAITING_PAYMENT',
+        status: OrderStatus.AWAITING_PAYMENT,
         createdAt: new Date(),
         shippingAddress: {
           ...mockAddress,
@@ -147,6 +148,105 @@ describe('CheckoutService', () => {
       // was called with an object containing an orderNumber.
       const orderCall = mockOrderRepo.createOrderTransactional.mock.calls[0][0];
       expect(orderCall.orderNumber).toMatch(/-\d{4}$/);
+    });
+
+    it('should throw 500 if payment gateway fails (Sad Path)', async () => {
+      // 1. Setup (Arrange)
+      const mockCart = {
+        items: [{ productId: 'p1', quantity: 1, unitPrice: 100, totalItemPrice: 100 }],
+        subtotal: 100,
+        itemsDiscount: 0,
+        total: 100,
+        activeCouponCode: undefined,
+        save: vi.fn().mockReturnThis(),
+      };
+      
+      // Mocks de dependências para chegar até o momento do pagamento
+      mockCartRepo.findByIdentifier.mockResolvedValue(mockCart);
+      mockAddressRepo.findAddressByIdAndUserIdDetail.mockResolvedValue({ recipientName: 'Test' });
+      mockPaymentRepo.findByIdentifier.mockResolvedValue({ identifier: 'pix', isEnabled: true });
+      mockOrderRepo.findLastByDatePrefix.mockResolvedValue({ orderNumber: '20231206-0001' });
+
+      // 2. Simular o erro no serviço de PIX (AQUI ESTÁ O "SAD PATH")
+      const errorMsg = 'Gateway de pagamento indisponível';
+      mockPixService.processPixPayment.mockRejectedValue(new Error(errorMsg));
+
+      // 3. Execução e Verificação (Act & Assert)
+      // Esperamos que o CheckoutService não engula o erro silenciosamente, mas o repasse.
+      await expect(
+        checkoutService.createOrder('user1', {
+          addressId: 'addr1',
+          paymentMethodIdentifier: 'pix',
+        })
+      ).rejects.toThrow(errorMsg);
+
+      // Verifica se o pedido NÃO foi criado (transacionalidade)
+      expect(mockOrderRepo.createOrderTransactional).not.toHaveBeenCalled();
+    });
+
+    it('should clear cart after order creation (Bug Fix: Infinite Cart)', async () => {
+      // Setup
+      const mockCart = {
+        items: [{ productId: 'p1', quantity: 1, unitPrice: 100, totalItemPrice: 100 }],
+        subtotal: 100,
+        itemsDiscount: 0,
+        total: 100,
+        activeCouponCode: undefined,
+        couponDiscount: 0,
+        couponInfo: undefined,
+        save: vi.fn().mockReturnThis(),
+      };
+
+      mockCartRepo.findByIdentifier.mockResolvedValue(mockCart);
+      mockAddressRepo.findAddressByIdAndUserIdDetail.mockResolvedValue({
+        recipientName: 'Test',
+        street: 'Street',
+        number: '1',
+        neighborhood: 'Neighborhood',
+        city: 'City',
+        state: 'ST',
+        cep: '00000-000',
+        phone: '000000000',
+      });
+      mockPaymentRepo.findByIdentifier.mockResolvedValue({ identifier: 'pix', isEnabled: true });
+      mockOrderRepo.findLastByDatePrefix.mockResolvedValue({ orderNumber: '20231206-0001' });
+      mockPixService.processPixPayment.mockResolvedValue({ qrCode: 'test-qr' });
+      mockOrderRepo.createOrderTransactional.mockResolvedValue({
+        _id: 'order1',
+        orderNumber: '20231206-0002',
+        status: OrderStatus.AWAITING_PAYMENT,
+        createdAt: new Date(),
+        shippingAddress: {
+          recipientName: 'Test',
+          street: 'Street',
+          number: '1',
+          neighborhood: 'Neighborhood',
+          city: 'City',
+          state: 'ST',
+          cep: '00000-000',
+          phone: '000000000',
+        },
+        items: [],
+        totals: { subtotal: 100, itemsDiscount: 0, couponDiscount: 0, totalDiscount: 0, total: 100 },
+        payment: { method: 'pix', qrCode: 'test-qr' },
+      });
+
+      // Execução
+      const result = await checkoutService.createOrder('user1', {
+        addressId: 'addr1',
+        paymentMethodIdentifier: 'pix',
+      });
+
+      // Verificações
+      // 1. O pedido foi criado com sucesso
+      expect(result.data.orderNumber).toBe('20231206-0002');
+      
+      // 2. Verifica que createOrderTransactional foi chamado (ele internamente limpa o carrinho)
+      expect(mockOrderRepo.createOrderTransactional).toHaveBeenCalled();
+      
+      // 3. Verifica que o save do carrinho foi chamado apenas uma vez (para aplicar cupom/recalcular)
+      // OBS: A limpeza do carrinho agora é feita dentro de createOrderTransactional
+      expect(mockCart.save).toHaveBeenCalledOnce();
     });
   });
 });

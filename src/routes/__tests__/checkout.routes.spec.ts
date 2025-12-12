@@ -1,5 +1,6 @@
 import request from 'supertest';
 import { describe, it, expect, beforeEach, vi, beforeAll } from 'vitest';
+import { OrderStatus } from '../../enums/order.enum';
 import app from '../../app';
 import jwt from 'jsonwebtoken';
 import {
@@ -86,7 +87,7 @@ describe('Checkout Routes Integration', () => {
 
       expect(res.status).toBe(201);
       expect(res.body.data.orderNumber).toBeDefined();
-      expect(res.body.data.status).toBe('AWAITING_PAYMENT');
+      expect(res.body.data.status).toBe(OrderStatus.AWAITING_PAYMENT);
       expect(res.body.data.totals.total).toBe(100.0);
 
       // Verify Side Effects

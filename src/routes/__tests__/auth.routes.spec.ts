@@ -89,4 +89,32 @@ describe('Auth Routes Integration', () => {
       expect(res.body.message).toContain('Credenciais inválidas');
     });
   });
+
+  describe('Security: Deleted User Token Validation', () => {
+    it('should reject requests with token from deleted user (401)', async () => {
+      // 1. Criar usuário e fazer login para obter token válido
+      const user = await UserFactory.create({ email: 'tobeDeleted@test.com' });
+      
+      const loginRes = await request(app).post('/api/v1/auth/login').send({
+        email: 'tobeDeleted@test.com',
+        password: 'password123',
+      });
+
+      const { accessToken } = loginRes.body.data;
+      expect(accessToken).toBeDefined();
+
+      // 2. Deletar o usuário do banco de dados (simulando demissão/exclusão)
+      await mongoose.model('User').findByIdAndDelete(user._id);
+
+      // 3. Tentar acessar rota protegida com o token ainda não expirado
+      // O middleware auth DEVE rejeitar porque o usuário não existe mais
+      const res = await request(app)
+        .get('/api/v1/user/me')
+        .set('Authorization', `Bearer ${accessToken}`);
+
+      // 4. Verificações de segurança
+      expect(res.status).toBe(401);
+      expect(res.body.message).toContain('não existe mais');
+    });
+  });
 });

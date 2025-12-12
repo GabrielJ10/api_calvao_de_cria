@@ -1,5 +1,6 @@
 import { body, ValidationChain, Meta } from 'express-validator';
 import { mongoIdRule, fieldWhitelistRule } from '../validation.utils';
+import { OrderStatus } from '../../../enums/order.enum';
 
 const ALLOWLISTS = {
   UPDATE_ORDER: ['status', 'shippingInfo'],
@@ -11,7 +12,13 @@ export const updateOrderRules = (): ValidationChain[] => [
 
   body('status')
     .optional()
-    .isIn(['PAID', 'PREPARING_SHIPMENT', 'SHIPPED', 'DELIVERED', 'CANCELED'])
+    .isIn([
+      OrderStatus.PAID,
+      OrderStatus.PREPARING_SHIPMENT,
+      OrderStatus.SHIPPED,
+      OrderStatus.DELIVERED,
+      OrderStatus.CANCELED,
+    ])
     .withMessage('O status fornecido é inválido.'),
 
   body('shippingInfo').optional().isObject().withMessage('shippingInfo deve ser um objeto.'),

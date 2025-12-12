@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { UpdateQuery } from 'mongoose';
 import userRepository, { IUserRepository } from '../repositories/user.repository';
 import cartRepository, { ICartRepository } from '../repositories/cart.repository';
 import userTransformer from '../utils/transformers/user.transformer';
@@ -7,6 +8,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import AppError from '../utils/AppError';
 import Email from '../utils/email'; //MOCK
+import logger from '../utils/logger';
 import { IUser } from '../models/user.model';
 import dotenv from 'dotenv';
 import { Types } from 'mongoose';
@@ -177,6 +179,11 @@ export class AuthService implements IAuthService {
       const resetURL = `${protocol}://${host}/api/v1/auth/reset-password/${resetToken}`;
       const simpleUserForEmail = { email: user.email, name: user.name };
       await new Email(simpleUserForEmail, resetURL).sendPasswordReset();
+      
+      // Log apenas para desenvolvimento, nunca expor na resposta HTTP
+      if (process.env.NODE_ENV === 'development') {
+        logger.debug(`Reset token gerado para ${email}`, { resetToken, resetURL });
+      }
     } catch (err) {
       await this.userRepository.updateById(user.id, {
         resetPasswordToken: undefined,
@@ -189,7 +196,7 @@ export class AuthService implements IAuthService {
     }
 
     return {
-      data: process.env.NODE_ENV === 'development' ? { resetToken } : null,
+      data: null, // Nunca expor o resetToken na resposta HTTP (segurança)
       message: 'Se uma conta com este e-mail existir, um link de recuperação foi enviado.',
       details: null,
     };
@@ -206,7 +213,7 @@ export class AuthService implements IAuthService {
 
     const passwordHash = await bcrypt.hash(newPassword, 10);
 
-    const updatePayload: any = {
+    const updatePayload: UpdateQuery<IUser> = {
       $set: {
         passwordHash,
         currentRefreshTokenHash: null,
