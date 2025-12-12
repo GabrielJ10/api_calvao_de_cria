@@ -16,7 +16,11 @@ function findCounts(obj) {
 
   for (const cand of candidates) {
     if (obj && typeof obj[cand.total] === 'number') {
-      return { total: obj[cand.total] || 0, passed: obj[cand.passed] || 0, failed: obj[cand.failed] || 0 };
+      return {
+        total: obj[cand.total] || 0,
+        passed: obj[cand.passed] || 0,
+        failed: obj[cand.failed] || 0,
+      };
     }
   }
 
@@ -148,7 +152,8 @@ function sendToGoogleChat(webhookUrl, payloadObject) {
   });
 }
 
-const DEFAULT_GOOGLE_CHAT_WEBHOOK_URL = 'https://chat.googleapis.com/v1/spaces/AAQA5s2Ta7Y/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=wI9G_cl-QIwLLCYwMoB8y5McIFMfeY8rj4XRkFth6L0';
+const DEFAULT_GOOGLE_CHAT_WEBHOOK_URL =
+  'https://chat.googleapis.com/v1/spaces/AAQA5s2Ta7Y/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=wI9G_cl-QIwLLCYwMoB8y5McIFMfeY8rj4XRkFth6L0';
 
 function escapeHtml(str) {
   if (!str) {
@@ -207,13 +212,19 @@ function buildCardPayload(reportJson, counts, repo, ref, runUrl, emoji) {
     for (const fileResult of reportJson.testResults) {
       const filePath = fileResult.name || '';
       const tag = getTag(filePath);
-      if (!groups[tag]) { groups[tag] = []; }
+      if (!groups[tag]) {
+        groups[tag] = [];
+      }
       const shortFilePath = filePath.replace(/^.*?tests[/\\]/i, 'tests/');
       if (Array.isArray(fileResult.assertionResults)) {
         for (const a of fileResult.assertionResults) {
           const status = (a.status || '').toLowerCase();
           const statusEmoji = status === 'passed' ? '✅' : status === 'failed' ? '❌' : '⚪';
-          const fullTitle = ((a.ancestorTitles || []).join(' > ') + (a.ancestorTitles && a.ancestorTitles.length ? ' > ' : '') + (a.title || '')).trim();
+          const fullTitle = (
+            (a.ancestorTitles || []).join(' > ') +
+            (a.ancestorTitles && a.ancestorTitles.length ? ' > ' : '') +
+            (a.title || '')
+          ).trim();
           groups[tag].push({ title: fullTitle, statusEmoji, file: shortFilePath });
         }
       }
@@ -221,16 +232,50 @@ function buildCardPayload(reportJson, counts, repo, ref, runUrl, emoji) {
   }
 
   // Build HTML for test groups, collapsed visually by tag
-  let testHtml = '<div style="font-family: Arial, sans-serif; font-size: 12px;">';
-  Object.keys(groups).forEach((g) => {
-    testHtml += `<b>[${escapeHtml(g)}]</b><br/>`;
-    groups[g].forEach((t) => {
-      testHtml += `&nbsp;&nbsp;${t.statusEmoji} ${escapeHtml(t.title)} <i>(${escapeHtml(t.file)})</i><br/>`;
-    });
-    testHtml += '<br/>';
-  });
-  testHtml += '</div>';
+  //   let testHtml = '<div style="font-family: Arial, sans-serif; font-size: 12px;">';
+  //   Object.keys(groups).forEach((g) => {
+  //     testHtml += `<b>[${escapeHtml(g)}]</b><br/>`;
+  //     groups[g].forEach((t) => {
+  //       testHtml += `&nbsp;&nbsp;${t.statusEmoji} ${escapeHtml(t.title)} <i>(${escapeHtml(t.file)})</i><br/>`;
+  //     });
+  //     testHtml += '<br/>';
+  //   });
+  //   testHtml += '</div>';
   // Buttons for run and report
+  let testHtml = '<div style="font-family: Arial, sans-serif; font-size: 12px;">';
+
+  // Limite de itens para exibir
+  const MAX_ITEMS = 15;
+  let itemsShown = 0;
+  let totalHidden = 0;
+
+  // Priorizar mostrar erros primeiro
+  const allTests = [];
+  Object.keys(groups).forEach((g) => {
+    groups[g].forEach((t) => allTests.push({ ...t, group: g }));
+  });
+
+  // Ordenar: Falhas primeiro
+  allTests.sort((a, b) => {
+    if (a.statusEmoji === '❌' && b.statusEmoji !== '❌') return -1;
+    if (a.statusEmoji !== '❌' && b.statusEmoji === '❌') return 1;
+    return 0;
+  });
+
+  allTests.forEach((t) => {
+    if (itemsShown < MAX_ITEMS) {
+      testHtml += `<b>[${escapeHtml(t.group)}]</b> ${t.statusEmoji} ${escapeHtml(t.title)} <br/>`;
+      itemsShown++;
+    } else {
+      totalHidden++;
+    }
+  });
+
+  if (totalHidden > 0) {
+    testHtml += `<br/><i>... e mais ${totalHidden} testes.</i>`;
+  }
+
+  testHtml += '</div>';
   const buttons = [];
   if (runUrl) {
     buttons.push({ text: 'View Run', onClick: { openLink: { url: runUrl } } });
@@ -238,7 +283,10 @@ function buildCardPayload(reportJson, counts, repo, ref, runUrl, emoji) {
   if (process.env.REPORT_URL) {
     buttons.push({ text: 'View Report', onClick: { openLink: { url: process.env.REPORT_URL } } });
     if (String(process.env.REPORT_URL).toLowerCase().endsWith('.zip')) {
-      buttons.unshift({ text: 'Download Report (.zip)', onClick: { openLink: { url: process.env.REPORT_URL } } });
+      buttons.unshift({
+        text: 'Download Report (.zip)',
+        onClick: { openLink: { url: process.env.REPORT_URL } },
+      });
     }
   }
 
@@ -261,9 +309,24 @@ function buildCardPayload(reportJson, counts, repo, ref, runUrl, emoji) {
                     text: `<b>Status:</b> <font color="${statusColor}">${escapeHtml(statusText)}</font>`,
                   },
                 },
-                { decoratedText: { startIcon: { materialIcon: { name: 'calendar_today' } }, text: `<b>Duration:</b> ${escapeHtml(durationText || 'N/A')}` } },
-                { decoratedText: { startIcon: { knownIcon: 'TIMER' }, text: `<b>Total:</b> ${total} &nbsp;&nbsp; <b>Passed:</b> ${passed} &nbsp;&nbsp; <b>Failed:</b> ${failed}` } },
-                { decoratedText: { startIcon: { knownIcon: 'PERSON' }, text: `<b>Executor:</b> ${escapeHtml(process.env.GITHUB_ACTOR || '')} &nbsp;&nbsp; <b>Branch:</b> ${escapeHtml(ref || '')}` } },
+                {
+                  decoratedText: {
+                    startIcon: { materialIcon: { name: 'calendar_today' } },
+                    text: `<b>Duration:</b> ${escapeHtml(durationText || 'N/A')}`,
+                  },
+                },
+                {
+                  decoratedText: {
+                    startIcon: { knownIcon: 'TIMER' },
+                    text: `<b>Total:</b> ${total} &nbsp;&nbsp; <b>Passed:</b> ${passed} &nbsp;&nbsp; <b>Failed:</b> ${failed}`,
+                  },
+                },
+                {
+                  decoratedText: {
+                    startIcon: { knownIcon: 'PERSON' },
+                    text: `<b>Executor:</b> ${escapeHtml(process.env.GITHUB_ACTOR || '')} &nbsp;&nbsp; <b>Branch:</b> ${escapeHtml(ref || '')}`,
+                  },
+                },
               ],
             },
             {
@@ -277,7 +340,6 @@ function buildCardPayload(reportJson, counts, repo, ref, runUrl, emoji) {
       },
     ],
   };
-
 }
 
 (async function main() {
@@ -309,7 +371,9 @@ function buildCardPayload(reportJson, counts, repo, ref, runUrl, emoji) {
 
   const repo = process.env.GITHUB_REPOSITORY || '';
   const ref = process.env.GITHUB_REF || '';
-  const runUrl = process.env.GITHUB_RUN_ID ? `https://github.com/${repo}/actions/runs/${process.env.GITHUB_RUN_ID}` : '';
+  const runUrl = process.env.GITHUB_RUN_ID
+    ? `https://github.com/${repo}/actions/runs/${process.env.GITHUB_RUN_ID}`
+    : '';
 
   let message = `${emoji} Test result: ${failed > 0 ? 'Some tests failed' : 'All tests passed'}\n`;
   message += `• Total: ${total}\n`;
@@ -349,7 +413,11 @@ function buildCardPayload(reportJson, counts, repo, ref, runUrl, emoji) {
             const status = (a.status || '').toLowerCase();
             const statusEmoji = status === 'passed' ? '✅' : status === 'failed' ? '❌' : '⚪';
             // Full test name: ancestorTitles + title
-            const fullTitle = ((a.ancestorTitles || []).join(' > ') + (a.ancestorTitles && a.ancestorTitles.length ? ' > ' : '') + (a.title || '')).trim();
+            const fullTitle = (
+              (a.ancestorTitles || []).join(' > ') +
+              (a.ancestorTitles && a.ancestorTitles.length ? ' > ' : '') +
+              (a.title || '')
+            ).trim();
             message += `\n• [${tag}] ${fullTitle} — ${statusEmoji} ${status.toUpperCase()} (${shortFilePath})`;
           }
         }
@@ -372,7 +440,10 @@ function buildCardPayload(reportJson, counts, repo, ref, runUrl, emoji) {
     }
   } catch (err) {
     // Fallback: try sending a plain text message to the webhook
-    console.error('Failed to send card to Google Chat, retrying as plain text message:', err && err.message);
+    console.error(
+      'Failed to send card to Google Chat, retrying as plain text message:',
+      err && err.message
+    );
     try {
       const fallbackResult = await sendToGoogleChat(webhookUrl, { text: message });
       console.log('Fallback notification sent to Google Chat:', fallbackResult.status);
