@@ -35,19 +35,10 @@ jobs:
         run: npm run lint
 
       # 5. Run tests with Coverage
-      - name: Run tests with coverage
-        run: npm run test:coverage
+      - name: Run tests
+        run: npm test
         env:
           NODE_ENV: test
-
-      # Upload Coverage Report
-      - name: Upload coverage reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage/
-          retention-days: 5
 
       # 6. TypeScript build check
       - name: Build check
