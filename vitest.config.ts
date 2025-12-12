@@ -6,7 +6,7 @@ export default defineConfig({
     environment: 'node',
     setupFiles: ['./tests/setup.ts'],
     testTimeout: 20000,
-    exclude: ['**/node_modules/**', '**/dist/**', '**/*.js'],
+    exclude: ['**/node_modules/**', '**/dist/**', '**/*.js', '**/tests/e2e/**'],
     include: ['tests/**/*.spec.ts', 'src/**/*.spec.ts'],
   },
 });
