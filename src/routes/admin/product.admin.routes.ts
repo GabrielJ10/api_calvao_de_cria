@@ -1,6 +1,8 @@
-import express from 'express';
+import express, { Router } from 'express';
 import { authMiddleware, restrictTo } from '../../middlewares/auth.middleware';
-import productAdminController from '../../controllers/admin/product.admin.controller';
+import productAdminController, {
+  ProductAdminController,
+} from '../../controllers/admin/product.admin.controller';
 import upload from '../../middlewares/upload.middleware';
 import {
   createProductRules,
@@ -12,47 +14,41 @@ import {
   validate,
 } from '../../utils/validators/product.validator';
 
-const router = express.Router();
+/**
+ * Factory function to create product admin routes with injected controller.
+ * Used for Top-Down testing where we can inject mocked controllers.
+ */
+export const createProductAdminRoutes = (controller: ProductAdminController): Router => {
+  const router = express.Router();
 
-// Aplica segurança de admin para TODAS as rotas neste arquivo
-router.use(authMiddleware, restrictTo('admin'));
+  // Aplica segurança de admin para TODAS as rotas neste arquivo
+  router.use(authMiddleware, restrictTo('admin'));
 
-router
-  .route('/')
-  .get(productAdminController.getAllProducts)
-  .post(
-    upload.array('images', 5),
-    createProductRules(),
-    validate,
-    productAdminController.createNewProduct
-  );
+  router
+    .route('/')
+    .get(controller.getAllProducts)
+    .post(upload.array('images', 5), createProductRules(), validate, controller.createNewProduct);
 
-router
-  .route('/:productId')
-  .get(productAdminController.getOneProduct)
-  .patch(updateProductRules(), validate, productAdminController.updateExistingProduct)
-  .delete(deleteProductRules(), validate, productAdminController.deleteExistingProduct);
+  router
+    .route('/:productId')
+    .get(controller.getOneProduct)
+    .patch(updateProductRules(), validate, controller.updateExistingProduct)
+    .delete(deleteProductRules(), validate, controller.deleteExistingProduct);
 
-// Rotas para manipulação de imagens
-router
-  .post(
-    '/:productId/images',
-    upload.array('images'),
-    validateAddImages(),
-    validate,
-    productAdminController.addProductImages
-  )
-  .patch(
-    '/:productId/images',
-    validateUpdateImages(),
-    validate,
-    productAdminController.updateProductImages
-  )
-  .delete(
-    '/:productId/images',
-    validateDeleteImages(),
-    validate,
-    productAdminController.deleteProductImages
-  );
+  // Rotas para manipulação de imagens
+  router
+    .post(
+      '/:productId/images',
+      upload.array('images'),
+      validateAddImages(),
+      validate,
+      controller.addProductImages
+    )
+    .patch('/:productId/images', validateUpdateImages(), validate, controller.updateProductImages)
+    .delete('/:productId/images', validateDeleteImages(), validate, controller.deleteProductImages);
 
-export default router;
+  return router;
+};
+
+// Default export for backward compatibility
+export default createProductAdminRoutes(productAdminController);
