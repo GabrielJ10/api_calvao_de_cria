@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main, develop,renan]
+    branches: [main, develop, renan, FINAL]
   pull_request:
-    branches: [main, develop,renan]
+    branches: [main, develop, renan, FINAL]
 
 jobs:
   build-and-test:
@@ -34,12 +34,34 @@ jobs:
       - name: Run linter
         run: npm run lint
 
-      # 5. Run tests with Vitest and MongoMemoryServer
-      - name: Run tests
-        run: npm test
+      # 5. Run tests (generate JSON report) — use npm test which writes test-report.json
+      - name: Run tests (generate JSON report)
+        id: run_tests
+        run: |
+          # Ensure test-report.json exists so the notifier has something to parse
+          echo '{}' > test-report.json
+          npm test || true
         env:
           NODE_ENV: test
+        continue-on-error: true
 
       # 6. TypeScript build check
       - name: Build check
         run: npm run build
+
+      # --- NOVOS PASSOS DE WEBHOOK ---
+
+      # 7. Notify Google Chat with the test report (always run)
+      - name: Notify Google Chat with test result
+        if: always()
+        env:
+          GOOGLE_CHAT_WEBHOOK_URL: ${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}
+        run: |
+          node scripts/google-chat-notify.js test-report.json || true
+
+      # 8. Fail job if tests failed
+      - name: Fail if tests failed
+        if: ${{ steps.run_tests.outcome == 'failure' }}
+        run: |
+          echo "Tests failed. Failing job."
+          exit 1

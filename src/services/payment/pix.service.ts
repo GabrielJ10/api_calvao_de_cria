@@ -1,5 +1,6 @@
 import qrcode from 'qrcode';
 import crypto from 'crypto';
+import logger from '../../utils/logger';
 
 export interface OrderData {
   recipientName: string;
@@ -58,7 +59,7 @@ export class PixService implements IPixService {
         transactionId: `PIX_${orderData.orderNumber}`,
       };
     } catch (err) {
-      console.error('Falha ao gerar QR Code:', err);
+      logger.error('Falha ao gerar QR Code PIX', err);
       // Em caso de falha na geração do QR Code, ainda podemos retornar o "copia e cola".
       return {
         method: 'pix',

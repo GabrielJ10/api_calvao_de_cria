@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
+import { OrderStatus } from '../enums/order.enum';
 
 interface IShippingAddress {
   recipientName: string;
@@ -24,7 +25,7 @@ interface IOrderItem {
 export interface IOrder extends Document {
   orderNumber: string;
   userId: Types.ObjectId;
-  status: 'AWAITING_PAYMENT' | 'PAID' | 'PREPARING_SHIPMENT' | 'SHIPPED' | 'DELIVERED' | 'CANCELED';
+  status: OrderStatus;
   items: IOrderItem[];
   shippingAddress: IShippingAddress;
   totals: {
@@ -84,8 +85,8 @@ const orderSchema = new Schema<IOrder>(
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     status: {
       type: String,
-      enum: ['AWAITING_PAYMENT', 'PAID', 'PREPARING_SHIPMENT', 'SHIPPED', 'DELIVERED', 'CANCELED'],
-      default: 'AWAITING_PAYMENT',
+      enum: Object.values(OrderStatus),
+      default: OrderStatus.AWAITING_PAYMENT,
       index: true,
     },
     items: [orderItemSchema],

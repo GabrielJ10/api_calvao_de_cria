@@ -25,11 +25,12 @@ export const authMiddleware = asyncHandler(
     try {
       const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET as string) as any;
 
-      // const currentUser = await userRepository.findById(decoded.userId);
-      // if (!currentUser) {
-      //   return next(new AppError('O usuário pertencente a este token não existe mais.', 401));
-      // }
-      // req.user = currentUser;
+      // Verificação de segurança: garante que o usuário ainda existe no banco
+      // Isso previne que tokens de usuários deletados sejam aceitos
+      const currentUser = await userRepository.findById(decoded.userId);
+      if (!currentUser) {
+        return next(new AppError('O usuário pertencente a este token não existe mais.', 401));
+      }
 
       req.user = { id: decoded.userId, role: decoded.role };
 

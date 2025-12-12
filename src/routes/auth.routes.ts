@@ -1,5 +1,5 @@
-import express from 'express';
-import authController from '../controllers/auth.controller';
+import express, { Router } from 'express';
+import authController, { AuthController } from '../controllers/auth.controller';
 import {
   registerRules,
   loginRules,
@@ -10,19 +10,28 @@ import {
 } from '../utils/validators/auth.validator';
 import { authMiddleware } from '../middlewares/auth.middleware';
 
-const router = express.Router();
+/**
+ * Factory function to create auth routes with injected controller.
+ * Used for Top-Down testing where we can inject mocked controllers.
+ */
+export const createAuthRoutes = (controller: AuthController): Router => {
+  const router = express.Router();
 
-router.post('/register', registerRules(), validate, authController.register);
-router.post('/login', loginRules(), validate, authController.login);
-router.post('/refresh', refreshTokenRules(), validate, authController.refreshToken); // Added validate, missing in JS but good practice
-router.post('/forgot-password', forgotPasswordRules(), validate, authController.forgotPassword);
-router.post(
-  '/reset-password/:resetToken',
-  resetPasswordRules(),
-  validate,
-  authController.resetPassword
-);
+  router.post('/register', registerRules(), validate, controller.register);
+  router.post('/login', loginRules(), validate, controller.login);
+  router.post('/refresh', refreshTokenRules(), validate, controller.refreshToken);
+  router.post('/forgot-password', forgotPasswordRules(), validate, controller.forgotPassword);
+  router.post(
+    '/reset-password/:resetToken',
+    resetPasswordRules(),
+    validate,
+    controller.resetPassword
+  );
 
-router.post('/logout', authMiddleware, authController.logout);
+  router.post('/logout', authMiddleware, controller.logout);
 
-export default router;
+  return router;
+};
+
+// Default export for backward compatibility
+export default createAuthRoutes(authController);

@@ -9,15 +9,40 @@ import AppError from '../utils/AppError';
 import orderTransformer from '../utils/transformers/order.transformer';
 import pixService, { IPixService } from './payment/pix.service';
 import { IOrder } from '../models/order.model';
+import { IPaymentMethod } from '../models/paymentMethod.model';
+import { OrderStatus, PaymentMethodType } from '../enums/order.enum';
 import { ServiceResponse } from '../types/service.types';
 
+interface ICouponPreviewResponse {
+  subtotal: number;
+  discount: number;
+  shipping: number;
+  total: number;
+  coupon: {
+    code: string;
+    message: string;
+  };
+}
+
+interface IOrderResponse {
+  id: unknown;
+  orderNumber: string;
+  status: OrderStatus;
+  createdAt: string;
+  shippingAddress: any;
+  items: any[];
+  totals: any;
+  paymentMethod: string;
+  paymentInfo: any;
+}
+
 export interface ICheckoutService {
-  getPaymentMethods(): Promise<ServiceResponse<any[]>>;
-  previewCoupon(userId: string, couponCode: string): Promise<ServiceResponse<any>>;
+  getPaymentMethods(): Promise<ServiceResponse<IPaymentMethod[]>>;
+  previewCoupon(userId: string, couponCode: string): Promise<ServiceResponse<ICouponPreviewResponse>>;
   createOrder(
     userId: string,
     input: { addressId: string; paymentMethodIdentifier: string; couponCode?: string }
-  ): Promise<ServiceResponse<any>>;
+  ): Promise<ServiceResponse<IOrderResponse>>;
 }
 
 export class CheckoutService implements ICheckoutService {
@@ -175,7 +200,7 @@ export class CheckoutService implements ICheckoutService {
     // --- INTEGRAÇÃO DO PAGAMENTO PROFISSIONAL ---
     // 7. Processar Pagamento
     let paymentData;
-    if (paymentMethod.identifier === 'pix') {
+    if (paymentMethod.identifier === PaymentMethodType.PIX) {
       paymentData = await this.pixService.processPixPayment({
         recipientName: address.recipientName,
         total: finalCart.total,
@@ -190,7 +215,7 @@ export class CheckoutService implements ICheckoutService {
     const orderData: Partial<IOrder> = {
       orderNumber: orderNumber,
       userId: userId as any,
-      status: 'AWAITING_PAYMENT',
+      status: OrderStatus.AWAITING_PAYMENT,
       items: finalCart.items.map((item) => ({
         productId: item.productId,
         name: item.name,
@@ -221,6 +246,7 @@ export class CheckoutService implements ICheckoutService {
     };
 
     // 7. Criar o pedido de forma transacional
+    // OBS: createOrderTransactional já deleta o carrinho antigo e cria um novo vazio
     const newOrder = await this.orderRepository.createOrderTransactional(orderData);
 
     // 8. Transformar e retornar a resposta
