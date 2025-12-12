@@ -28,12 +28,17 @@ function findCounts(obj) {
     for (const t of obj.tests) {
       total += 1;
       const status = (t.status || '').toLowerCase();
-      if (status === 'passed' || status === 'ok') passed += 1;
-      else if (status === 'failed' || status === 'broken') failed += 1;
-      else {
+      if (status === 'passed' || status === 'ok') {
+        passed += 1;
+      } else if (status === 'failed' || status === 'broken') {
+        failed += 1;
+      } else {
         // fallback: if has `errors` or `error`, treat as failed
-        if (t.error || t.errors) failed += 1;
-        else passed += 1;
+        if (t.error || t.errors) {
+          failed += 1;
+        } else {
+          passed += 1;
+        }
       }
     }
 
@@ -43,12 +48,22 @@ function findCounts(obj) {
   // Search recursively for any of the keys
   const found = { total: null, passed: null, failed: null };
   function walk(o) {
-    if (!o || typeof o !== 'object') return;
+    if (!o || typeof o !== 'object') {
+      return;
+    }
     for (const k of Object.keys(o)) {
-      if (found.total === null && /total/i.test(k) && typeof o[k] === 'number') found.total = o[k];
-      if (found.passed === null && /pass(es)?/i.test(k) && typeof o[k] === 'number') found.passed = o[k];
-      if (found.failed === null && /fail(ure|ed|s)?/i.test(k) && typeof o[k] === 'number') found.failed = o[k];
-      if (typeof o[k] === 'object') walk(o[k]);
+      if (found.total === null && /total/i.test(k) && typeof o[k] === 'number') {
+        found.total = o[k];
+      }
+      if (found.passed === null && /pass(es)?/i.test(k) && typeof o[k] === 'number') {
+        found.passed = o[k];
+      }
+      if (found.failed === null && /fail(ure|ed|s)?/i.test(k) && typeof o[k] === 'number') {
+        found.failed = o[k];
+      }
+      if (typeof o[k] === 'object') {
+        walk(o[k]);
+      }
     }
   }
   walk(obj);
@@ -62,8 +77,32 @@ function findCounts(obj) {
 
 function safeParseJson(path) {
   try {
-    const content = fs.readFileSync(path, 'utf8');
-    return JSON.parse(content);
+    const buf = fs.readFileSync(path);
+    // Try UTF-8 first
+    let content = buf.toString('utf8');
+    if (content.charCodeAt(0) === 0xfeff) {
+      content = content.slice(1);
+    }
+    try {
+      return JSON.parse(content);
+    } catch (_e) {
+      // Try utf16le (PowerShell on Windows often creates UTF-16LE output)
+      try {
+        content = buf.toString('utf16le');
+        if (content.charCodeAt(0) === 0xfeff) {
+          content = content.slice(1);
+        }
+        return JSON.parse(content);
+      } catch (_ee) {
+        // Last attempt: attempt to strip any non-printable prefix by slicing at the first
+        // occurrence of a JSON opening char ({ or [) or newline/carriage return.
+        const idx = content.search(/[\{\[\n\r]/);
+        if (idx !== -1) {
+          content = content.slice(idx);
+        }
+        return JSON.parse(content);
+      }
+    }
   } catch (err) {
     console.error('Failed to read or parse JSON file:', path, err && err.message);
     return null;
@@ -143,8 +182,50 @@ const DEFAULT_GOOGLE_CHAT_WEBHOOK_URL = 'https://chat.googleapis.com/v1/spaces/A
   message += `• Total: ${total}\n`;
   message += `• Passed: ${passed}\n`;
   message += `• Failed: ${failed}`;
-  if (runUrl) message += `\n• Details: ${runUrl}`;
-  if (ref) message += `\n• Ref: ${ref}`;
+  if (runUrl) {
+    message += `\n• Details: ${runUrl}`;
+  }
+  if (ref) {
+    message += `\n• Ref: ${ref}`;
+  }
+  // Build per-test list
+  message += `\n\nDetailed test list:`;
+
+  try {
+    if (Array.isArray(reportJson.testResults)) {
+      for (const fileResult of reportJson.testResults) {
+        const filePath = fileResult.name || '';
+        // Determine tag by path
+        const getTag = (p) => {
+          if (/tests[\/]integration/.test(p)) {
+            return 'integration';
+          }
+          if (/tests[\/]unit/.test(p)) {
+            return 'unit';
+          }
+          if (/tests[\/]e2e/.test(p)) {
+            return 'e2e';
+          }
+          return 'other';
+        };
+        const tag = getTag(filePath);
+        // Short file path for readability
+        const shortFilePath = filePath.replace(/^.*?tests[\/]/i, 'tests/');
+        if (Array.isArray(fileResult.assertionResults)) {
+          for (const a of fileResult.assertionResults) {
+            const status = (a.status || '').toLowerCase();
+            const statusEmoji = status === 'passed' ? '✅' : status === 'failed' ? '❌' : '⚪';
+            // Full test name: ancestorTitles + title
+            const fullTitle = ((a.ancestorTitles || []).join(' > ') + (a.ancestorTitles && a.ancestorTitles.length ? ' > ' : '') + (a.title || '')).trim();
+            message += `\n• [${tag}] ${fullTitle} — ${statusEmoji} ${status.toUpperCase()} (${shortFilePath})`;
+          }
+        }
+      }
+    }
+  } catch (err) {
+    // Do not abort; append a simple fallback
+    message += `\n\nCould not build detailed test list: ${err && err.message}`;
+  }
 
   try {
     const result = await sendToGoogleChat(webhookUrl, message);
